@@ -1,0 +1,5 @@
+rayvision_log
+rayvision_utils
+requests
+configparser
+tenacity

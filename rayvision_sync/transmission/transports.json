@@ -1,0 +1,68 @@
+{
+    "foxrenderfarm_www2":{
+        "engine_type":"aspera",
+        "server_name":"HKCT",
+        "server_ip":"render-client.raysync.cn",
+        "server_port":"10221"
+    },
+    "renderbus_www2":{
+        "engine_type":"aspera",
+        "server_name":"CTCC",
+        "server_ip":"45.251.92.29",
+        "server_port":"10221"
+    },
+    "foxrenderfarm_www3":{
+        "engine_type":"aspera",
+        "server_name":"HKCT",
+        "server_ip":"render-client.raysync.cn",
+        "server_port":"10321"
+    },
+    "renderbus_www3": {
+        "engine_type":"aspera",
+        "server_name":"CTCC",
+        "server_ip":"36.111.130.24",
+        "server_port":"10321"
+    },
+    "foxrenderfarm_www4": {
+        "engine_type":"aspera",
+        "server_name":"HKCT",
+        "server_ip":"render-client.raysync.cn",
+        "server_port":"10421"
+    },
+    "renderbus_www4": {
+        "engine_type":"aspera",
+        "server_name":"CTCC",
+        "server_ip":"1.183.72.170",
+        "server_port":"10621"
+    },
+    "renderbus_www6": {
+        "engine_type":"aspera",
+        "server_name":"CTCC",
+        "server_ip":"1.183.72.170",
+        "server_port":"10621"
+    },
+    "foxrenderfarm_www9":{
+        "engine_type":"aspera",
+        "server_name":"HKCT",
+        "server_ip":"render-client.raysync.cn",
+        "server_port":"10921"
+    },
+    "foxrenderfarm_gpu":{
+        "engine_type":"aspera",
+        "server_name":"HKCT",
+        "server_ip":"render-client.raysync.cn",
+        "server_port":"12121"
+    },
+    "renderbus_gpu":{
+        "engine_type":"aspera",
+        "server_name":"CTCC",
+        "server_ip":"117.187.214.185",
+        "server_port":"12121"
+    },
+    "default":{
+        "engine_type":"aspera",
+        "server_name":"CTCC",
+        "server_ip":"render-ct1.raysync.cn",
+        "server_port":"10201"
+    }
+}

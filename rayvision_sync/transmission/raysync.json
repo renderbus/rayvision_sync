@@ -1,0 +1,62 @@
+{
+    "2":{
+        "action": "login",
+        "language": "zh-CN",
+        "pass_word":"",
+        "proxy_ip":"render.raysync.cn",
+        "proxy_port":32001,
+        "server5_port":2442,
+        "server5_ssl_port":2443,
+        "server_ip":"127.0.0.1",
+        "server_port":2121,
+        "user_name":""
+    },
+    "3":{
+        "action": "login",
+        "language": "zh-CN",
+        "pass_word":"",
+        "proxy_ip":"render2.raysync.cn",
+        "proxy_port":42001,
+        "server5_port":2442,
+        "server5_ssl_port":2443,
+        "server_ip":"127.0.0.1",
+        "server_port":3131,
+        "user_name":""
+    },
+    "6":{
+        "action": "login",
+        "language": "zh-CN",
+        "pass_word":"",
+        "proxy_ip":"render2.raysync.cn",
+        "proxy_port":42001,
+        "server5_port":2442,
+        "server5_ssl_port":2443,
+        "server_ip":"127.0.0.1",
+        "server_port":3131,
+        "user_name":""
+    },
+    "21":{
+        "action": "login",
+        "language": "zh-CN",
+        "pass_word":"",
+        "proxy_ip":"render.raysync.cn",
+        "proxy_port":32001,
+        "server5_port":2442,
+        "server5_ssl_port":2443,
+        "server_ip":"127.0.0.1",
+        "server_port":2121,
+        "user_name":""
+    },
+    "22":{
+        "action": "login",
+        "language": "zh-CN",
+        "pass_word":"",
+        "proxy_ip":"render2.raysync.cn",
+        "proxy_port":42001,
+        "server5_port":2442,
+        "server5_ssl_port":2443,
+        "server_ip":"127.0.0.1",
+        "server_port":3131,
+        "user_name":""
+    }
+}

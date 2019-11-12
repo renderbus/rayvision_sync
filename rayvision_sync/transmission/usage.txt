@@ -1,0 +1,19 @@
+usage:
+    rayvision_transmitter.exe engine_type server_name server_host server_port storage_id user_id transmit_type local_path remote_path [max_connect_failure_count] [keep_path] [max_speed] [database_config_path]
+
+sample:
+    D:\test\rayvision_transmitter.exe rayvision AL 42.123.110.42 8885 3442 100001 upload_files D:\storage\input /
+    D:\test\rayvision_transmitter.exe rayvision AL 42.123.110.42 8885 3442 100001 upload_file_list D:\test\upload_file_list.txt /
+    D:\test\rayvision_transmitter.exe rayvision AL 42.123.110.42 8885 3442 100001 upload_file_pairs D:\test\upload_file_pairs.txt /
+    D:\test\rayvision_transmitter.exe rayvision AL 42.123.110.42 8885 3442 100001 download_files D:\storage\output /D/storage/input/
+    D:\test\rayvision_transmitter.exe rayvision AL 42.123.110.42 8885 3442 100001 download_file_list D:\storage\output D:\test\download_file_list.txt
+
+notes:
+    1. all arguments must use ansi-encoding
+    2. 'max_connect_failure_count' is default to 1
+    3. 'keep_path' is default to 'true'. when upload: 'true' means remote keep sub path like local path; when download: 'true' means local keep sub path like remote path
+    4. 'engine_type' support 'tcp', 'rayvision', 'aspera' and 'typhoon' on windows, but only support 'tcp', 'aspera' and 'typhoon' on centos (it is different with old version)
+    5. 'transmit_type' support 'upload_files', 'download_files', 'upload_file_list', 'download_file_list' and 'upload_file_pairs'
+    6. when 'transmit_type' is 'upload_file_list', 'download_file_list' or 'upload_file_pairs', the file-list/file-pairs content line is a path which must use utf8-encoding
+    7. the unit of 'max_speed' is KB/S, default value is 1048576 KB/S, means 1 GB/S
+    8. 'database_config_path' for using to record upload records, the files will be skipped to upload untill they have been changed, database configuration file see 'db.ini'
