@@ -79,7 +79,7 @@ class RayvisionTransfer(object):
         else:
             transmitter_exe = os.path.join(current_dir, 'transmission',
                                            local_os,
-                                           'rayvision_transmitter.exe')
+                                           'rayvision_transmitter')
         return transmitter_exe
 
     def parse_transports_json(self, transports_json=None, domain=None,
