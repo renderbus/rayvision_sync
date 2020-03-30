@@ -12,7 +12,7 @@ setup(
     name="rayvision_sync",
     author="Shenzhen Rayvision Technology Co., Ltd",
     author_email="developer@rayvision.com",
-    url="",
+    url="https://github.com/renderbus/rayvision_sync",
     package_dir={"": "."},
     packages=find_packages("."),
     description=("Upload configuration file and asset file, download result "
@@ -29,5 +29,4 @@ setup(
     ],
     use_scm_version=True,
     setup_requires=["setuptools_scm"],
-    tests_require=[],
 )

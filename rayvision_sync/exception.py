@@ -1,0 +1,18 @@
+"""CG errors."""
+
+class RayvisionError(Exception):
+    """Raise RayvisionError if something wrong."""
+
+    def __init__(self, error_code, error, *args, **kwargs):
+        """Initialize error message, inherited Exception.
+
+        Args:
+            error_code (int): Error status code.
+            error (str): Error message.
+            args (set): Other parameters.
+            kwargs (dict): Other keyword parameters.
+
+        """
+        super(RayvisionError, self).__init__(self, error, *args, **kwargs)
+        self.error_code = error_code
+        self.error = error

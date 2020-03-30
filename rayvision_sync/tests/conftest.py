@@ -8,10 +8,14 @@ References:
 
 """
 
+import os
+import sys
+
 # pylint: disable=import-error
 import pytest
 from rayvision_api.connect import Connect
 from rayvision_api.operators import Query
+from rayvision_api.core import RayvisionAPI
 
 from rayvision_sync.download import RayvisionDownload
 from rayvision_sync.manage import RayvisionManageTask
@@ -20,7 +24,7 @@ from rayvision_sync.upload import RayvisionUpload
 
 
 @pytest.fixture()
-def user_trans_info(tmpdir):
+def user_trans_info():
     """Get user trans info."""
     return {
         'config_bid': '54252',
@@ -30,7 +34,6 @@ def user_trans_info(tmpdir):
         'domain': 'tasks.renderbus.com',
         'platform': '2',
         'local_os': 'windows',
-        'local_path': str(tmpdir.join('local_path'))
     }
 
 
@@ -82,15 +85,33 @@ def expected_result():
 
 
 @pytest.fixture()
-def connect(user_info_dict):
+def api(user_info_dict, mocker, tmpdir):
     """Create connect API object."""
-    return Query(Connect(**user_info_dict))
+    mocker_task_id = mocker.patch.object(Connect, "post")
+    mocker_task_id.return_value = {}
+    rayvision_api = RayvisionAPI(**user_info_dict)
+    if "win" in sys.platform.lower():
+        local_os = "windows"
+        os.environ["USERPROFILE"] = str(tmpdir)
+    else:
+        local_os = "linux"
+        os.environ["HOME"] = str(tmpdir)
+    rayvision_api.user_info = {
+        'config_bid': "10101",
+        'input_bid': "20202",
+        "output_bid": "20202",
+        "domain": "task.renderbus.com",
+        "platform": "2",
+        "local_os": local_os,
+        "user_id": "1015646",
+    }
+    return rayvision_api
 
 
 @pytest.fixture()
-def manage(connect):
+def manage(api):
     """Create an RayvisionManageTask object."""
-    return RayvisionManageTask(connect)
+    return RayvisionManageTask(api.query)
 
 
 @pytest.fixture()
@@ -100,12 +121,12 @@ def rayvision_transfer(user_trans_info, manage):
 
 
 @pytest.fixture()
-def rayvision_download(rayvision_transfer):
+def rayvision_download(api):
     """Create an RayvisionDownload object."""
-    return RayvisionDownload(rayvision_transfer)
+    return RayvisionDownload(api)
 
 
 @pytest.fixture()
-def rayvision_upload(rayvision_transfer):
+def rayvision_upload(api):
     """Create an RayvisionDownload object."""
-    return RayvisionUpload(rayvision_transfer)
+    return RayvisionUpload(api)

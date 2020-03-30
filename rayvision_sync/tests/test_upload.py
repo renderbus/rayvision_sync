@@ -6,8 +6,7 @@ import os
 
 # pylint: disable=import-error
 import pytest
-from rayvision_utils.exception.exception import RayvisionError
-from rayvision_utils.utils import convert_path
+from rayvision_sync.exception import RayvisionError
 
 
 def test_upload_config(rayvision_upload, tmpdir):
