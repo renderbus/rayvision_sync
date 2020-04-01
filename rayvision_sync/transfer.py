@@ -18,7 +18,7 @@ class RayvisionTransfer(object):
     """Transfer including upload files and download files."""
 
     def __init__(self, config_bid, input_bid, domain, platform, local_os,
-                 user_id, output_bid=None, local_path=None, manage_task=None):
+                 user_id, output_bid=None, manage_task=None):
         """Initialize the configuration of the transfer.
 
         Args:
@@ -42,7 +42,6 @@ class RayvisionTransfer(object):
         self.platform = platform
         self.local_os = local_os
         self.user_id = user_id
-        self.local_path = local_path if local_path else ""
         self.manage_task = manage_task
         self.user_info = {
             'config_bid': self.config_bid,
@@ -52,7 +51,6 @@ class RayvisionTransfer(object):
             'domain': self.domain,
             'platform': self.platform,
             'local_os': self.local_os,
-            'local_path': self.local_path
         }
         current_dir = os.path.dirname(os.path.realpath(__file__))
         self.transmitter_exe = self.init_transmitter(current_dir, self.local_os)
@@ -107,7 +105,7 @@ class RayvisionTransfer(object):
 
         """
         if not domain:
-            domain = self.user_info.get('domain')
+            domain = self.domain
         if not transports_json:
             transports_json = self._transports_json
         if 'foxrenderfarm' in domain:

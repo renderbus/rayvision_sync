@@ -8,7 +8,7 @@ from rayvision_sync.manage import RayvisionManageTask
 
 @pytest.mark.parametrize('task_id_list,max_speed,sleep_time', [
     ([258951, 465400, 4664165], '1024', 0),
-    ([], '10240', 2),
+    ([111], '10240', 2),
     ([8951, 6144, 4665], '2048', 100)
 ])
 def test_download(rayvision_download, task_id_list, max_speed, sleep_time,
@@ -23,7 +23,7 @@ def test_download(rayvision_download, task_id_list, max_speed, sleep_time,
 
 @pytest.mark.parametrize('task_id_list,max_speed,sleep_time', [
     ([25, 614654, 4664165], '1024', 0),
-    ([], '10240', 12),
+    ([11], '10240', 12),
     ([8951, 6144, 4665], '2048', 100)
 ])
 def test_auto_download(rayvision_download, task_id_list, max_speed, sleep_time,
@@ -38,7 +38,7 @@ def test_auto_download(rayvision_download, task_id_list, max_speed, sleep_time,
 
 
 @pytest.mark.parametrize('task_id_list,max_speed,sleep_time', [
-    ([], '10240', 20),
+    ([11], '10240', 20),
     ([8951, 6144, 4665], '2048', 5)
 ])
 def test_auto_download_after_task_completed(rayvision_download, task_id_list,

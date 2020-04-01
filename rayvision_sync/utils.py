@@ -10,7 +10,7 @@ import sys
 import time
 
 # Import third-party modules
-from rayvision_utils.exception.exception import RayvisionError
+from rayvision_sync.exception import RayvisionError
 
 # Import local models
 from rayvision_sync.constants import TASK_STATUS_DESCRIPTION
@@ -226,3 +226,25 @@ def get_task_status_description(task_status_code=None, language='1'):
                      ' Please check the input.')
         raise RayvisionError(1000000, "Get empty task_status_description,"
                                       " Please check the input")
+
+
+def create_transfer_params(api):
+    """Takes a parameter from the authentication object.
+
+    Args:
+        api: Objects that have been authenticated.
+
+    Returns:
+        dict
+
+    """
+    params = {
+        'config_bid': api.user_info['config_bid'],
+        'input_bid': api.user_info['input_bid'],
+        "output_bid": api.user_info["output_bid"],
+        "domain": api.user_info['domain'],
+        "platform": api.user_info['platform'],
+        "local_os": api.user_info['local_os'],
+        "user_id": api.user_info['user_id'],
+    }
+    return params
