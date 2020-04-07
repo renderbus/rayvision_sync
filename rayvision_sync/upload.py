@@ -168,13 +168,14 @@ class RayvisionUpload(object):
         return True
 
     @upload_retry
-    def upload_asset(self, upload_json_path, max_speed=None):
+    def upload_asset(self, upload_json_path, max_speed=None, is_db=True):
         """Run the cmd command to upload asset files.
 
         Args:
             upload_json_path (str): Path to the upload.json file.
             max_speed (str): Maximum transmission speed, default value
                 is 1048576 KB/S.
+            is_db (bool): Whether to produce local database record upload file.
 
         Returns:
             bool: True is success, False is failure.
@@ -184,7 +185,10 @@ class RayvisionUpload(object):
         max_speed = max_speed if max_speed is not None else "1048576"
         cmd_params = [transmit_type, upload_json_path, '/', max_speed,
                       'false', 'input_bid']
-        db_ini_path = self.create_db_ini()
+        if is_db:
+            db_ini_path = self.create_db_ini()
+        else:
+            db_ini_path = None
         cmd = self.trans.create_cmd(cmd_params, db_ini_path)
 
         return run_cmd(cmd, flag=True, logger=self.logger)
