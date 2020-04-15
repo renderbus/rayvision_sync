@@ -3,7 +3,6 @@
 
 PACKAGE_NAME = 'rayvision_sync'
 
-
 TASK_STATUS_DESCRIPTION = {
     "0": {
         "0": "等待中",
@@ -52,3 +51,4 @@ TASK_STATUS_DESCRIPTION = {
 }
 
 TASK_END_STATUS_CODE_LIST = ['10', '20', '23', '25', '30', '35', '45']
+
