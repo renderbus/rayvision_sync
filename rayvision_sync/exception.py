@@ -16,3 +16,7 @@ class RayvisionError(Exception):
         super(RayvisionError, self).__init__(self, error, *args, **kwargs)
         self.error_code = error_code
         self.error = error
+
+
+class UnsupportedDatabaseError(Exception):
+    """The local database supports only Redis and Sqlite"""

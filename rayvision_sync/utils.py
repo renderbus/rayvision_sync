@@ -8,6 +8,7 @@ import logging
 import subprocess
 import sys
 import time
+import configparser
 
 # Import third-party modules
 from rayvision_sync.exception import RayvisionError
@@ -137,6 +138,7 @@ def run_cmd(cmd_str, my_shell=True, print_log=True, flag=None, logger=None):
 
 def upload_retry(func):
     """Determine whether to retry according to the status code of cmd."""
+
     def inner(*args, **kwargs):
         """Handle."""
         time_interval = 5
@@ -248,3 +250,10 @@ def create_transfer_params(api):
         "user_id": api.user_info['user_id'],
     }
     return params
+
+
+def read_ini_config(db_config_path):
+    """read ini file"""
+    conf = configparser.ConfigParser()
+    conf.read(db_config_path, encoding="utf-8")
+    return conf
