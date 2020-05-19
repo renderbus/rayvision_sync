@@ -73,7 +73,7 @@ version = '.'.join(release.split('.')[:2])
 # for a list of supported languages.
 #
 # This is also used if you do content translation via gettext catalogs.
-# Usually you set "language" from the command line for these cases.
+# Usually you set "language" from the argvs line for these cases.
 language = 'zh'
 
 # List of patterns, relative to source directory, that match files and
@@ -139,7 +139,7 @@ latex_elements = {
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
-# (source start file, target name, title,
+# (source sync file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'rayvision_sync.tex', u'rayvision_sync Documentation',
@@ -150,7 +150,7 @@ latex_documents = [
 # -- Options for manual page output ---------------------------------------
 
 # One entry per manual page. List of tuples
-# (source start file, name, description, authors, manual section).
+# (source sync file, name, description, authors, manual section).
 man_pages = [
     (master_doc, 'rayvision_sync', u'rayvision_sync Documentation',
      [author], 1)
@@ -160,7 +160,7 @@ man_pages = [
 # -- Options for Texinfo output -------------------------------------------
 
 # Grouping the document tree into Texinfo files. List of tuples
-# (source start file, target name, title, author,
+# (source sync file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'rayvision_sync', u'rayvision_sync Documentation',

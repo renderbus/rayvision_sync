@@ -1,7 +1,7 @@
-传输(transfer)
+传输(deliver)
 -------------------------------
 
-.. automodule:: rayvision_sync.transfer
+.. automodule:: rayvision_sync.deliver
    :members:
    :undoc-members:
    :show-inheritance:

@@ -15,7 +15,7 @@ Sync演示Demo
     from rayvision_api import RayvisionAPI
     from rayvision_sync.download import RayvisionDownload
     from rayvision_sync.manage import RayvisionManageTask
-    from rayvision_sync.transfer import RayvisionTransfer
+    from rayvision_sync.deliver import RayvisionTransfer
 
 
     user_info = {

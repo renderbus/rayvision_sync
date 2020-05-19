@@ -19,9 +19,7 @@ setup(
                  "file."),
     entry_points={},
     install_requires=list(parse_requirements("requirements.txt")),
-    package_data={
-        'rayvision_sync': ["./transmission/*", "./transmission/*/*", "./transmission/*/*/*", "*.ini"],
-    },
+    package_data={},
     classifiers=[
         "Programming Language :: Python",
         "Programming Language :: Python :: 2",

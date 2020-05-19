@@ -7,6 +7,6 @@ sync核心模块
 
    core/upload.rst
    core/download.rst
-   core/transfer.rst
+   core/deliver.rst
    core/manage.rst
    core/constants.rst
