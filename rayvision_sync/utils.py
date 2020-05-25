@@ -3,18 +3,21 @@
 # Import built-in modules
 from __future__ import print_function
 
-from builtins import str
+import codecs
+import json
 import logging
+import os
 import subprocess
 import sys
 import time
-import configparser
 
-# Import third-party modules
-from rayvision_sync.exception import RayvisionError
+import configparser
+from builtins import str
 
 # Import local models
 from rayvision_sync.constants import TASK_STATUS_DESCRIPTION
+# Import third-party modules
+from rayvision_sync.exception import RayvisionError
 
 
 def print_to_log(cmd, logger):
@@ -151,7 +154,7 @@ def upload_retry(func):
             if times > 10:
                 if result == 11:
                     raise RayvisionError(200025, "There are files that cannot"
-                                                 "be uploaded, please check")
+                                                 "be uploaded, please check the file is exists.")
                 if result == 10:
                     time.sleep(time_interval)
                     time_interval += 10
@@ -161,6 +164,9 @@ def upload_retry(func):
                 elif result == 9:
                     raise Exception("Parameter or domain name resolution"
                                     "error.")
+                elif result in [1, 2, 3, 4, 5, 6, 7, 8]:
+                    raise RayvisionError(200024, "argument format invalid"
+                                                 "please check the argument.")
             else:
                 times += 1
                 logger.info("Retrying upload......")
@@ -257,3 +263,72 @@ def read_ini_config(db_config_path):
     conf = configparser.ConfigParser()
     conf.read(db_config_path, encoding="utf-8")
     return conf
+
+
+def json_load(json_path, encoding='utf-8'):
+    """Load the data from the json file.
+
+    Args:
+        json_path (str): Json file path.
+        encoding (str): Encoding, default is ``utf-8``.
+
+    Returns:
+        dict: Data in the json file.
+            e.g.:
+                {
+                    "task_info"
+                }
+
+    """
+    if os.path.exists(json_path):
+        with codecs.open(json_path, 'r', encoding=encoding) as f_json:
+            data = json.load(f_json)
+
+        return data
+
+
+def write_json(path, info):
+    """write json file."""
+    with codecs.open(path, 'w', 'utf-8') as f_tips_json:
+        json.dump(info, f_tips_json, indent=4, ensure_ascii=False)
+
+
+def cutting_upload(upload_path, max_resources_number=None, after_cutting_position=None):
+    """Cut upload.json according to the number of custom files.
+
+    Args:
+        upload_path (str): upload.json absolute path.
+        max_resources_number (int): Maximum number of resources in each upload file.
+        after_cutting_position (str): save location of upload file generated after cutting.
+
+    Returns:
+        list: Absolute path of all upload files generated after cutting, excluding original upload files.
+            e.g.:
+                ['D:\\test\\test_upload\\1586250829\\upload_1.json',
+                'D:\\test\\test_upload\\1586250829\\upload_2.json']
+
+    """
+    if not os.path.exists(upload_path):
+        raise RayvisionError(200001, "upload file is not exist: {}".format(upload_path))
+    if max_resources_number is None:
+        return upload_path
+    if after_cutting_position is None or not os.path.exists(after_cutting_position):
+        after_cutting_position = os.path.dirname(upload_path)
+
+    upload_info = json_load(upload_path)
+    asset = upload_info.get("asset", [])
+    if max_resources_number >= len(asset):
+        return
+    count = 1
+    cut_json_pool = []
+    for per_index in range(0, len(asset) + 1, max_resources_number):
+        if per_index == 0:
+            cut_per_info = asset[0:max_resources_number]
+        else:
+            cut_per_info = asset[per_index:per_index + max_resources_number]
+        cut_info = {"asset": cut_per_info}
+        to_path = os.path.normpath(os.path.join(after_cutting_position, "upload_{}.json".format(str(count))))
+        write_json(to_path, cut_info)
+        count += 1
+        cut_json_pool.append(to_path)
+    return cut_json_pool

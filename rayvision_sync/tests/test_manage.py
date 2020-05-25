@@ -2,7 +2,8 @@
 
 # pylint: disable=import-error
 import pytest
-from rayvision_api.operators import Query
+
+from rayvision_api.operators import QueryOperator
 
 
 @pytest.fixture()
@@ -88,7 +89,7 @@ def test_is_task_end(manage, mocker, task_info_list, task_id):
     task_info = {
         'items': task_info_list
     }
-    mocker_task_id = mocker.patch.object(Query, 'task_info')
+    mocker_task_id = mocker.patch.object(QueryOperator, 'task_info')
     mocker_task_id.return_value = task_info
     result = manage.is_task_end(task_id)
     assert isinstance(result, bool)

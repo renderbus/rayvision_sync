@@ -173,18 +173,18 @@ class RayvisionTransfer(object):
                         ' "{server_path}" "{maxConnectFailureCount}"'
                         ' "{keep_path}" "{max_speed}" "{database_config_path}"'
                         ' ').format(
-                            exePath=self.transmitter_exe,
-                            engineType=self.transport_info['engine_type'],
-                            serverName=self.transport_info['server_name'],
-                            serverIp=self.transport_info['server_ip'],
-                            serverPort=self.transport_info['server_port'],
-                            download_id=self.user_info[cmd_params[5]],
-                            userId=self.user_id,
-                            transmit_type=cmd_params[0],
-                            local_path=cmd_params[1],
-                            server_path=cmd_params[2],
-                            maxConnectFailureCount='1',  # default is 1.
-                            keep_path=cmd_params[4],
-                            max_speed=cmd_params[3],
-                            database_config_path=db_ini_path)
+            exePath=self.transmitter_exe,
+            engineType=self.transport_info['engine_type'],
+            serverName=self.transport_info['server_name'],
+            serverIp=self.transport_info['server_ip'],
+            serverPort=self.transport_info['server_port'],
+            download_id=self.user_info[cmd_params[5]],
+            userId=self.user_id,
+            transmit_type=cmd_params[0],
+            local_path=cmd_params[1],
+            server_path=cmd_params[2],
+            maxConnectFailureCount='1',  # default is 1.
+            keep_path=cmd_params[4],
+            max_speed=cmd_params[3],
+            database_config_path=db_ini_path)
         return transmit_cmd

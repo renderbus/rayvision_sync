@@ -13,10 +13,9 @@ import sys
 
 # pylint: disable=import-error
 import pytest
-from rayvision_api.connect import Connect
-from rayvision_api.operators import Query
-from rayvision_api.core import RayvisionAPI
 
+from rayvision_api.connect import Connect
+from rayvision_api.core import RayvisionAPI
 from rayvision_sync.download import RayvisionDownload
 from rayvision_sync.manage import RayvisionManageTask
 from rayvision_sync.transfer import RayvisionTransfer
@@ -96,7 +95,7 @@ def api(user_info_dict, mocker, tmpdir):
     else:
         local_os = "linux"
         os.environ["HOME"] = str(tmpdir)
-    rayvision_api.user_info = {
+    rayvision_api.user._info = {
         'config_bid': "10101",
         'input_bid': "20202",
         "output_bid": "20202",

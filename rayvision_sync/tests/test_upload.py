@@ -1,7 +1,5 @@
 """Test the rayvision_sync download functions."""
 
-import codecs
-import json
 import os
 
 # pylint: disable=import-error
