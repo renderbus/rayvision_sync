@@ -76,7 +76,7 @@ class RayvisionTransfer(object):
                                            'rayvision_transmitter.exe')
         else:
             transmitter_exe = os.path.join(current_dir, 'transmission',
-                                           local_os,
+                                           'linux',
                                            'rayvision_transmitter')
         return transmitter_exe
 
