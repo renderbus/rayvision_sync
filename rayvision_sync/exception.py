@@ -20,3 +20,6 @@ class RayvisionError(Exception):
 
 class UnsupportedDatabaseError(Exception):
     """The local database supports only Redis and Sqlite"""
+
+class UnsupportedEngineType(Exception):
+    """Engine Only Support aspera and raysync"""

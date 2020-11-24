@@ -6,16 +6,16 @@ the un-downloaded task is recorded (the task is rendered).
 
 """
 
+import os
 # Import built-in modules
 import time
-import os
 
+from rayvision_sync.manage import RayvisionManageTask
 # Import local modules
 from rayvision_sync.transfer import RayvisionTransfer
-from rayvision_sync.manage import RayvisionManageTask
+from rayvision_sync.utils import create_transfer_params
 from rayvision_sync.utils import run_cmd
 from rayvision_sync.utils import str2unicode
-from rayvision_sync.utils import create_transfer_params
 
 
 class RayvisionDownload(object):
@@ -77,7 +77,8 @@ class RayvisionDownload(object):
     def download(self, task_id_list=None,
                  max_speed=None, print_log=True,
                  download_filename_format="true",
-                 local_path=None, server_path=None):
+                 local_path=None, server_path=None,
+                 engine_type="aspera", server_ip=None, server_port=None):
         """Download and update the undownloaded record.
 
         Args:
@@ -97,6 +98,11 @@ class RayvisionDownload(object):
             server_path (str or list): The user customizes the file structure to be downloaded from
                 the output server, and all file structures are downloaded by default,
                 example: "18164087_test/l_layer".
+            engine_type (str, optional): set engine type, support "aspera" and "raysync", Default "aspera".
+            server_ip (str, optional): transmit server host,
+                if not set, it is obtained from the default transport profile.
+            server_port (str, optional): transmit server port,
+                if not set, it is obtained from the default transport profile.
 
         Returns:
             bool: True is success.
@@ -108,14 +114,16 @@ class RayvisionDownload(object):
         self._download_log(task_id_list, local_path)
 
         self._run_download(task_id_list, local_path, max_speed, print_log,
-                          download_filename_format, server_path)
+                           download_filename_format, server_path,
+                           engine_type=engine_type, server_ip=server_ip, server_port=server_port)
         self.logger.info("[Rayvision_sync end download.....]")
         return True
 
     def auto_download(self, task_id_list=None, max_speed=None,
                       print_log=False, sleep_time=10,
                       download_filename_format="true",
-                      local_path=None):
+                      local_path=None,
+                      engine_type="aspera", server_ip=None, server_port=None):
         """Automatic download (complete one frame download).
 
         Wait for all downloads to update undownloaded records.
@@ -136,6 +144,11 @@ class RayvisionDownload(object):
             local_path (str): Download file locally save path,
                 default Window system is "USERPROFILE" environment variable address splicing "renderfarm_sdk",
                 Linux system is "HOME" environment variable address splicing "renderfarm_sdk".
+            engine_type (str, optional): set engine type, support "aspera" and "raysync", Default "aspera".
+            server_ip (str, optional): transmit server host,
+                if not set, it is obtained from the default transport profile.
+            server_port (str, optional): transmit server port,
+                if not set, it is obtained from the default transport profile.
 
         Returns:
             bool: True is success.
@@ -147,13 +160,15 @@ class RayvisionDownload(object):
 
         self._auto_download_tool(task_id_list, sleep_time,
                                  max_speed, print_log, local_path,
-                                 download_filename_format)
+                                 download_filename_format,
+                                 engine_type=engine_type, server_ip=server_ip, server_port=server_port)
         self.logger.info("[Rayvision_sync end auto_download.....]")
         return True
 
     def _auto_download_tool(self, task_id_list, sleep_time,
                             max_speed, print_log, local_path,
-                            download_filename_format="true"):
+                            download_filename_format="true",
+                            engine_type=None, server_ip=None, server_port=None):
         """Automatic download (complete one frame download).
 
         Args:
@@ -173,7 +188,8 @@ class RayvisionDownload(object):
                 for task_id in task_id_list:
                     is_task_end = self.manage_task.is_task_end(task_id)
                     self._run_download([task_id], local_path, max_speed,
-                                      print_log, download_filename_format)
+                                       print_log, download_filename_format,
+                                       engine_type=engine_type, server_ip=server_ip, server_port=server_port)
 
                     if is_task_end is True:
                         self.logger.info('The tasks end: %s', task_id)
@@ -185,7 +201,8 @@ class RayvisionDownload(object):
                                            max_speed=None, print_log=True,
                                            sleep_time=10,
                                            download_filename_format="true",
-                                           local_path=None):
+                                           local_path=None,
+                                           engine_type="aspera", server_ip=None, server_port=None):
         """Auto download after the tasks render completed.
 
         Args:
@@ -204,6 +221,11 @@ class RayvisionDownload(object):
             local_path (str): Download file locally save path,
                 default Window system is "USERPROFILE" environment variable address splicing "renderfarm_sdk",
                 Linux system is "HOME" environment variable address splicing "renderfarm_sdk".
+            engine_type (str, optional): set engine type, support "aspera" and "raysync", Default "aspera".
+            server_ip (str, optional): transmit server host,
+                if not set, it is obtained from the default transport profile.
+            server_port (str, optional): transmit server port,
+                if not set, it is obtained from the default transport profile.
 
         Returns:
             bool: True is success.
@@ -224,9 +246,10 @@ class RayvisionDownload(object):
                         time.sleep(float(5))
                         self.logger.info('The tasks end: %s', task_id)
                         self._run_download([task_id], local_path,
-                                          max_speed, print_log,
-                                          download_filename_format,
-                                          )
+                                           max_speed, print_log,
+                                           download_filename_format,
+                                           engine_type=engine_type, server_ip=server_ip, server_port=server_port
+                                           )
                         task_id_list.remove(task_id)
             else:
                 break
@@ -236,8 +259,8 @@ class RayvisionDownload(object):
         return True
 
     def _run_download(self, task_id_list, local_path, max_speed=None,
-                        print_log=True, download_filename_format="true",
-                        server_path=None):
+                      print_log=True, download_filename_format="true",
+                      server_path=None, engine_type="aspera", server_ip=None, server_port=None):
         """Execute the cmd command for multitasking download.
 
         Args:
@@ -252,9 +275,14 @@ class RayvisionDownload(object):
             server_path (str / list): The user customizes the file structure to be downloaded from
                 the output server, and all file structures are downloaded by default,
                 example: "18164087_test/l_layer".
+            engine_type (str, optional): set engine type, support "aspera" and "raysync", Default "aspera".
+            server_ip (str, optional): transmit server host,
+                if not set, it is obtained from the default transport profile.
+            server_port (str, optional): transmit server port,
+                if not set, it is obtained from the default transport profile.
 
         """
-        transmit_type = 'download_files'
+        transmit_type = 'download_path'
         local_path = str2unicode(local_path)
         # The unit of 'max_speed' is KB/S, default value is 1048576 KB/S,
         #  means 1 GB/S.
@@ -277,5 +305,6 @@ class RayvisionDownload(object):
             cmd_params = [transmit_type, local_path, output_file_name,
                           max_speed, download_filename_format, 'output_bid']
 
-            cmd = self.trans.create_cmd(cmd_params)
+            cmd = self.trans.create_cmd(cmd_params, engine_type=engine_type,
+                                        server_ip=server_ip, server_port=server_port)
             run_cmd(cmd, print_log=print_log, logger=self.logger)

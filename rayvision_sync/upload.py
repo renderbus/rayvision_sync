@@ -4,13 +4,12 @@ Upload the scene's configuration file and asset file.
 
 """
 
-import os
-import subprocess
-from threading import Thread
-
 # Import built-in modules
 import configparser
+import os
+import subprocess
 from concurrent.futures import ThreadPoolExecutor
+from threading import Thread
 
 # Import local modules
 from rayvision_sync import RayvisionTransfer
@@ -132,7 +131,8 @@ class RayvisionUpload(object):
         return db_ini_path
 
     def upload(self, task_id, task_json_path, tips_json_path, asset_json_path,
-               upload_json_path, max_speed=None):
+               upload_json_path, max_speed=None, transmit_type="upload_json",
+               engine_type="aspera", server_ip=None, server_port=None):
         """Run the cmd command to upload the configuration file.
 
         Args:
@@ -143,6 +143,14 @@ class RayvisionUpload(object):
             upload_json_path (str, optional): upload.json file absolute path.
             max_speed (str): Maximum transmission speed, default value
                 is 1048576 KB/S.
+            transmit_type (str): transmit type:
+                1. upload_json: upload from json file,in this type, next remote will not used.
+                2. upload_list: upload from file list.
+            engine_type (str, optional): set engine type, support "aspera" and "raysync", Default "aspera".
+            server_ip (str, optional): transmit server host,
+                if not set, it is obtained from the default transport profile.
+            server_port (str, optional): transmit server port,
+                if not set, it is obtained from the default transport profile.
 
         Returns:
             bool: True is success, False is failure.
@@ -154,16 +162,18 @@ class RayvisionUpload(object):
             asset_json_path,
             upload_json_path
         ]
-        result_config = self.upload_config(task_id, config_file_list,
-                                           max_speed)
+        result_config = self.upload_config(task_id, config_file_list, max_speed,
+                                           engine_type=engine_type, server_ip=server_ip, server_port=server_port)
         if not result_config:
             return False
-        result_asset = self.upload_asset(upload_json_path, max_speed)
+        result_asset = self.upload_asset(upload_json_path, max_speed, transmit_type,
+                                         engine_type=engine_type, server_ip=server_ip, server_port=server_port)
         if not result_asset:
             return False
         return True
 
-    def upload_config(self, task_id, config_file_list, max_speed=None):
+    def upload_config(self, task_id, config_file_list, max_speed=None,
+                      engine_type="aspera", server_ip=None, server_port=None):
         """Run the cmd command to upload configuration profiles.
 
         Args:
@@ -171,12 +181,17 @@ class RayvisionUpload(object):
             config_file_list (list): Configuration file path list.
             max_speed (str): Maximum transmission speed, default value
                 is 1048576 KB/S.
+            engine_type (str, optional): set engine type, support "aspera" and "raysync", Default "aspera".
+            server_ip (str, optional): transmit server host,
+                if not set, it is obtained from the default transport profile.
+            server_port (str, optional): transmit server port,
+                if not set, it is obtained from the default transport profile.
 
         Returns:
             bool: True is success, False is failure.
 
         """
-        transmit_type = "upload_files"
+        transmit_type = "upload_path"
         max_speed = max_speed if max_speed is not None else "1048576"
 
         for config_path in config_file_list:
@@ -191,7 +206,8 @@ class RayvisionUpload(object):
                 continue
             cmd_params = [transmit_type, local_path, server_path, max_speed,
                           'false', 'config_bid']
-            cmd = self.trans.create_cmd(cmd_params)
+            cmd = self.trans.create_cmd(cmd_params, engine_type=engine_type, server_ip=server_ip,
+                                        server_port=server_port)
 
             times = 0
             while True:
@@ -206,7 +222,9 @@ class RayvisionUpload(object):
         return True
 
     @upload_retry
-    def upload_asset(self, upload_json_path, max_speed=None, is_db=True):
+    def upload_asset(self, upload_json_path, max_speed=None, is_db=True,
+                     engine_type="aspera", server_ip=None, server_port=None,
+                     transmit_type="upload_json"):
         """Run the cmd command to upload asset files.
 
         Args:
@@ -214,12 +232,17 @@ class RayvisionUpload(object):
             max_speed (str): Maximum transmission speed, default value
                 is 1048576 KB/S.
             is_db (bool): Whether to produce local database record upload file.
+            engine_type (str): Transport engine type, supports "aspera" and "raysync".
+            server_ip (str): Transport server IP.
+            server_port (str): Transport server port.
+            transmit_type (str): transmit type:
+                1. upload_json: upload from json file,in this type, next remote will not used.
+                2. upload_list: upload from file list.
 
         Returns:
             bool: True is success, False is failure.
 
         """
-        transmit_type = "upload_file_pairs"
         max_speed = max_speed if max_speed is not None else "1048576"
         cmd_params = [transmit_type, upload_json_path, '/', max_speed,
                       'false', 'input_bid']
@@ -227,7 +250,7 @@ class RayvisionUpload(object):
             db_ini_path = self.create_db_ini(upload_json_path)
         else:
             db_ini_path = None
-        cmd = self.trans.create_cmd(cmd_params, db_ini_path)
+        cmd = self.trans.create_cmd(cmd_params, db_ini_path, engine_type, server_ip, server_port)
 
         return run_cmd(cmd, flag=True, logger=self.logger)
 
