@@ -128,6 +128,7 @@ def run_cmd(cmd_str, my_shell=True, print_log=True, flag=None, logger=None):
         cmd_str = str2unicode(cmd_str)
         cmd_str = cmd_str.encode(sys.getfilesystemencoding())
 
+
     cmd_result = subprocess.Popen(cmd_str, stdin=subprocess.PIPE,
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.STDOUT,

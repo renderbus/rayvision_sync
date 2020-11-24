@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Transfer Module.
 
 Execute the cmd command to make the last asset and
@@ -12,6 +13,10 @@ import codecs
 import json
 import logging
 import os
+import sys
+
+from rayvision_sync.constants import ENGINE_TYPE
+from rayvision_sync.exception import UnsupportedEngineType
 
 
 class RayvisionTransfer(object):
@@ -76,7 +81,7 @@ class RayvisionTransfer(object):
                                            'rayvision_transmitter.exe')
         else:
             transmitter_exe = os.path.join(current_dir, 'transmission',
-                                           'linux',
+                                           "linux",
                                            'rayvision_transmitter')
         return transmitter_exe
 
@@ -141,15 +146,15 @@ class RayvisionTransfer(object):
             '6': 'www6',
             '20': 'pic',
             '21': 'gpu',
+            '35': 'gpu5',
         }
         return setting_mappings[platform]
 
-    def create_cmd(self, cmd_params, db_ini_path=None):
+    def create_cmd(self, cmd_params, db_ini_path=None, engine_type="aspera", server_ip=None, server_port=None):
         """Splice a cmd command.
 
         Args:
             cmd_params (list): Parameters required by the cmd command.
-
                 Examples::
 
                     [
@@ -162,28 +167,42 @@ class RayvisionTransfer(object):
                     ]
 
             db_ini_path (str): Database path.
+            engine_type (str, optional): set engine type, support "aspera" and "raysync", Default "aspera".
+            server_ip (str, optional): transmit server host,
+                if not set, it is obtained from the default transport profile.
+            server_port (str, optional): transmit server port,
+                if not set, it is obtained from the default transport profile.
 
         Returns:
             str: Cmd command.
 
         """
-        transmit_cmd = ('echo y|"{exePath}" "{engineType}" "{serverName}"'
-                        ' "{serverIp}" "{serverPort}" "{download_id}"'
-                        ' "{userId}" "{transmit_type}" "{local_path}"'
-                        ' "{server_path}" "{maxConnectFailureCount}"'
-                        ' "{keep_path}" "{max_speed}" "{database_config_path}"'
+        if not sys.platform.startswith('win'):
+            os.environ["LD_LIBRARY_PATH"] = os.path.dirname(self.transmitter_exe)
+            chmod_str = "chmod 777 -R {}/*".format(os.path.dirname(self.transmitter_exe))
+            os.system(chmod_str)
+        if not bool(engine_type):
+            engine_type = "aspera"
+        if engine_type not in ENGINE_TYPE:
+            msg = "{} is not a supported transport engine, " \
+                  "currently only support 'aspera' and 'raysync'".format(engine_type)
+            raise UnsupportedEngineType(msg)
+        transmit_cmd = ('echo y|"{exePath}" -E "{engineType}"'
+                        ' -H "{serverIp}" -P "{serverPort}" -S "{download_id}"'
+                        ' -U "{userId}" -T "{transmit_type}" -L "{local_path}"'
+                        ' -R "{server_path}" -r "{maxConnectFailureCount}"'
+                        ' -K "{keep_path}" -s "{max_speed}" -C "{database_config_path}"'
                         ' ').format(
             exePath=self.transmitter_exe,
-            engineType=self.transport_info['engine_type'],
-            serverName=self.transport_info['server_name'],
-            serverIp=self.transport_info['server_ip'],
-            serverPort=self.transport_info['server_port'],
+            engineType=engine_type,
+            serverIp=server_ip if server_ip else self.transport_info[engine_type]['server_ip'],
+            serverPort=server_port if server_port else self.transport_info[engine_type]['server_port'],
             download_id=self.user_info[cmd_params[5]],
             userId=self.user_id,
             transmit_type=cmd_params[0],
             local_path=cmd_params[1],
             server_path=cmd_params[2],
-            maxConnectFailureCount='1',  # default is 1.
+            maxConnectFailureCount='2',  # default is 2.
             keep_path=cmd_params[4],
             max_speed=cmd_params[3],
             database_config_path=db_ini_path)
