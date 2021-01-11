@@ -236,6 +236,26 @@ def get_task_status_description(task_status_code=None, language='1'):
         raise RayvisionError(1000000, "Get empty task_status_description,"
                                       " Please check the input")
 
+def get_share_info(api):
+    """Get the main account information.
+
+    Args:
+        api: api object.
+
+    Returns:
+
+    """
+    user_profile = api.user.query_user_profile()
+    share_main_capital = user_profile.get("shareMainCapital", 0)
+    if share_main_capital == 0:
+        main_input_bid = api.user_info['input_bid']
+        main_user_id = api.user_info['user_id']
+    else:
+        user_transfer_bid = api.user.get_transfer_bid()
+        main_input_bid = user_transfer_bid.get("parent_input_bid")
+        main_user_id = user_profile.get("mainUserId")
+    return main_input_bid, main_user_id
+
 
 def create_transfer_params(api):
     """Takes a parameter from the authentication object.

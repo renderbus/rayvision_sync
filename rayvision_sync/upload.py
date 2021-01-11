@@ -15,7 +15,7 @@ from threading import Thread
 from rayvision_sync import RayvisionTransfer
 from rayvision_sync.constants import TRANSFER_LOG, RENDERFARM_SDK, WINDOWS_LOCAL_ENV, LINUX_LOCAL_ENV, RAYVISION_DB
 from rayvision_sync.exception import RayvisionError, UnsupportedDatabaseError
-from rayvision_sync.utils import create_transfer_params
+from rayvision_sync.utils import create_transfer_params, get_share_info
 from rayvision_sync.utils import read_ini_config
 from rayvision_sync.utils import run_cmd
 from rayvision_sync.utils import str2unicode
@@ -250,7 +250,9 @@ class RayvisionUpload(object):
             db_ini_path = self.create_db_ini(upload_json_path)
         else:
             db_ini_path = None
-        cmd = self.trans.create_cmd(cmd_params, db_ini_path, engine_type, server_ip, server_port)
+        main_input_bid, main_user_id = get_share_info(self.api)
+        cmd = self.trans.create_cmd(cmd_params, db_ini_path, engine_type, server_ip, server_port,
+                                    main_user_id=main_user_id, main_input_bid=main_input_bid)
 
         return run_cmd(cmd, flag=True, logger=self.logger)
 

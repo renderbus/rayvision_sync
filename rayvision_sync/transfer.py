@@ -15,7 +15,7 @@ import logging
 import os
 import sys
 
-from rayvision_sync.constants import ENGINE_TYPE
+from rayvision_sync.constants import ENGINE_TYPE, PLATFORM_ALIAS_MAP
 from rayvision_sync.exception import UnsupportedEngineType
 
 
@@ -140,17 +140,13 @@ class RayvisionTransfer(object):
                 platforms.
 
         """
-        setting_mappings = {
-            '2': 'www2',
-            '3': 'www3',
-            '6': 'www6',
-            '20': 'pic',
-            '21': 'gpu',
-            '35': 'gpu5',
-        }
-        return setting_mappings[platform]
+        return PLATFORM_ALIAS_MAP[platform]
 
-    def create_cmd(self, cmd_params, db_ini_path=None, engine_type="aspera", server_ip=None, server_port=None):
+
+
+
+    def create_cmd(self, cmd_params, db_ini_path=None, engine_type="aspera", server_ip=None, server_port=None,
+                   main_user_id=None, main_input_bid=None):
         """Splice a cmd command.
 
         Args:
@@ -172,6 +168,8 @@ class RayvisionTransfer(object):
                 if not set, it is obtained from the default transport profile.
             server_port (str, optional): transmit server port,
                 if not set, it is obtained from the default transport profile.
+            main_user_id (str): Main account user id.
+            main_input_bid (str): Main account input bid.
 
         Returns:
             str: Cmd command.
@@ -197,8 +195,8 @@ class RayvisionTransfer(object):
             engineType=engine_type,
             serverIp=server_ip if server_ip else self.transport_info[engine_type]['server_ip'],
             serverPort=server_port if server_port else self.transport_info[engine_type]['server_port'],
-            download_id=self.user_info[cmd_params[5]],
-            userId=self.user_id,
+            download_id=main_input_bid if main_input_bid else self.user_info[cmd_params[5]],
+            userId=main_user_id if main_user_id else self.user_id,
             transmit_type=cmd_params[0],
             local_path=cmd_params[1],
             server_path=cmd_params[2],
