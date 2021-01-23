@@ -23,7 +23,8 @@ class RayvisionTransfer(object):
     """Transfer including upload files and download files."""
 
     def __init__(self, config_bid, input_bid, domain, platform, local_os,
-                 user_id, output_bid=None, manage_task=None):
+                 user_id, output_bid=None, manage_task=None,
+                 transports_json="", transmitter_exe=""):
         """Initialize the configuration of the transfer.
 
         Args:
@@ -48,6 +49,8 @@ class RayvisionTransfer(object):
         self.local_os = local_os
         self.user_id = user_id
         self.manage_task = manage_task
+        self.transports_json = transports_json
+
         self.user_info = {
             'config_bid': self.config_bid,
             'input_bid': self.input_bid,
@@ -57,24 +60,23 @@ class RayvisionTransfer(object):
             'platform': self.platform,
             'local_os': self.local_os,
         }
-        current_dir = os.path.dirname(os.path.realpath(__file__))
-        self.transmitter_exe = self.init_transmitter(current_dir, self.local_os)
-
-        self._transports_json = os.path.join(current_dir, 'transmission',
-                                             'transports.json')
-        self.transport_info = self.parse_transports_json()
+        if os.path.exists(transmitter_exe):
+            self.transmitter_exe = transmitter_exe
+        else:
+            self.transmitter_exe = self.init_transmitter(self.local_os)
+        self.transport_info = self.parse_transports_json(transports_json)
 
     @staticmethod
-    def init_transmitter(current_dir, local_os):
+    def init_transmitter(local_os):
         """Gets the path of the transfer software.
 
         Args:
             current_dir: transfer base directory.
-            local_os: system name, Only support "window" or "linux"
 
         Returns: transfer software absolute path.
 
         """
+        current_dir = os.path.dirname(os.path.realpath(__file__))
         if local_os == 'windows':
             transmitter_exe = os.path.join(current_dir, 'transmission',
                                            local_os,
@@ -112,7 +114,9 @@ class RayvisionTransfer(object):
         if not domain:
             domain = self.domain
         if not transports_json:
-            transports_json = self._transports_json
+            current_dir = os.path.dirname(os.path.realpath(__file__))
+            self.transports_json = os.path.join(current_dir, 'transmission',
+                                                 'transports.json')
         if 'foxrenderfarm' in domain:
             key_first_half = 'foxrenderfarm'
         else:
@@ -127,7 +131,7 @@ class RayvisionTransfer(object):
         else:
             key = '%s_%s' % (key_first_half, key_second_half)
 
-        with codecs.open(transports_json, 'r', 'utf-8') as f_transports:
+        with codecs.open(self.transports_json, 'r', 'utf-8') as f_transports:
             transports_info = json.load(f_transports)
         return transports_info[key]
 
