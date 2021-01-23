@@ -9,7 +9,6 @@ import configparser
 import os
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
-from threading import Thread
 
 # Import local modules
 from rayvision_sync import RayvisionTransfer
@@ -29,9 +28,11 @@ class RayvisionUpload(object):
 
     """
 
-    def __init__(self, api, db_config_path=None):
+    def __init__(self, api, db_config_path=None, transports_json="", transmitter_exe=""):
         """Initialize instance."""
         params = create_transfer_params(api)
+        params["transports_json"] = transports_json
+        params["transmitter_exe"] = transmitter_exe
         self.api = api
         self.trans = RayvisionTransfer(**params)
         self.logger = self.trans.logger
@@ -289,23 +290,7 @@ class RayvisionUpload(object):
 
         return transfer_log_path, redis_config, sqlite_config, database_config
 
-    def multi_thread_upload(self, upload_pool, thread_num=10):
-        """muti thread upload resource.
-
-        Args:
-            upload_pool (list or tuple): Store a list or ancestor of uploaded files.
-            thread_num (int): Number of threads, 10 threads are enabled by default.
-
-        """
-        threads = []
-        for _ in range(thread_num):
-            t = Thread(target=self.upload_asset, args=(upload_pool.pop(),))
-            threads.append(t)
-            t.start()
-        for t in threads:
-            t.join()
-
-    def thread_pool_upload(self, upload_pool, pool_size=10):
+    def thread_pool_upload(self, upload_pool, pool_size=10, **kwargs):
         """Thread pool upload.
 
         Args:
@@ -313,7 +298,8 @@ class RayvisionUpload(object):
             pool_size (int): thread pool size, default is 10 threads.
 
         """
+        kwargs.pop("is_db")
         pool = ThreadPoolExecutor(pool_size)
         for i in range(len(upload_pool)):
-            pool.submit(self.upload_asset, upload_pool[i])
+            pool.submit(self.upload_asset, upload_json_path=upload_pool[i], is_db=False, **kwargs)
         pool.shutdown(wait=True)
