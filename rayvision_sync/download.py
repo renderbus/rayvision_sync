@@ -25,11 +25,15 @@ class RayvisionDownload(object):
 
     """
 
-    def __init__(self, api):
+    def __init__(self, api, transports_json="", transmitter_exe="", automatic_line=False, internet_provider=""):
         """Initialize instance."""
         params = create_transfer_params(api)
+        params["transports_json"] = transports_json
+        params["transmitter_exe"] = transmitter_exe
+        params["automatic_line"] = automatic_line
+        params["internet_provider"] = internet_provider
         self.api = api
-        self.trans = RayvisionTransfer(**params)
+        self.trans = RayvisionTransfer(api, **params)
         self.manage_task = self.trans.manage_task or RayvisionManageTask(api.query)
         self.logger = self.trans.logger
 
@@ -307,4 +311,6 @@ class RayvisionDownload(object):
 
             cmd = self.trans.create_cmd(cmd_params, engine_type=engine_type,
                                         server_ip=server_ip, server_port=server_port)
-            run_cmd(cmd, print_log=print_log, logger=self.logger)
+            tranfer_code = run_cmd(cmd, print_log=print_log, logger=self.logger)
+            if tranfer_code == 1:
+                run_cmd(cmd, print_log=print_log, logger=self.logger)
