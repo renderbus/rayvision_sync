@@ -114,9 +114,13 @@ def manage(api):
 
 
 @pytest.fixture()
-def rayvision_transfer(user_trans_info, manage):
+def rayvision_transfer(user_trans_info, manage, api):
     """Create an RayvisionTransfer object."""
-    return RayvisionTransfer(manage_task=manage, **user_trans_info)
+    user_trans_info["transports_json"] = ""
+    user_trans_info["transmitter_exe"] = ""
+    user_trans_info["automatic_line"] = False
+    user_trans_info["internet_provider"] = ""
+    return RayvisionTransfer(api=api, manage_task=manage, **user_trans_info)
 
 
 @pytest.fixture()

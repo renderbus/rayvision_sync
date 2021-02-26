@@ -22,9 +22,10 @@ from rayvision_sync.exception import UnsupportedEngineType
 class RayvisionTransfer(object):
     """Transfer including upload files and download files."""
 
-    def __init__(self, config_bid, input_bid, domain, platform, local_os,
-                 user_id, output_bid=None, manage_task=None,
-                 transports_json="", transmitter_exe=""):
+    def __init__(self, api, config_bid, input_bid, domain, platform, local_os,
+                 user_id, automatic_line, output_bid=None, manage_task=None,
+                 transports_json="", transmitter_exe="", internet_provider=""
+                 ):
         """Initialize the configuration of the transfer.
 
         Args:
@@ -39,7 +40,9 @@ class RayvisionTransfer(object):
                 of the management tasks, If it is just uploading, this
                 parameter can not be passed. If it is downloaded, this
                 parameter must have.
+            internet_provider (str): Network provider.
         """
+        self.api = api
         self.logger = logging.getLogger(__name__)
         self.config_bid = config_bid
         self.input_bid = input_bid
@@ -64,7 +67,10 @@ class RayvisionTransfer(object):
             self.transmitter_exe = transmitter_exe
         else:
             self.transmitter_exe = self.init_transmitter(self.local_os)
-        self.transport_info = self.parse_transports_json(transports_json)
+        if automatic_line:
+            self.transport_info = self.parse_service_transfe_line(internet_provider)
+        else:
+            self.transport_info = self.parse_transports_json(transports_json)
 
     @staticmethod
     def init_transmitter(local_os):
@@ -135,6 +141,37 @@ class RayvisionTransfer(object):
             transports_info = json.load(f_transports)
         return transports_info[key]
 
+    def parse_service_transfe_line(self, internet_provider=None):
+        transfer_lines = self.api.transmit.get_transfer_config()
+        if not transfer_lines:
+            raise EnvironmentError("Unable to obtain transmission line")
+        resp_engine_lines = transfer_lines.get("resqEngines")
+        data = dict()
+        for engine_info in resp_engine_lines:
+            resp_line = engine_info["respTaskEngineLines"]
+            for line in resp_line:
+                if internet_provider:
+                    if line["name"] == internet_provider:
+                        data.update({
+                            engine_info["engineName"].lower(): {
+                                "server_name": line["name"],
+                                "server_ip": line["server"],
+                                "server_port": line["port"],
+                            }
+                        })
+                        break
+                else:
+                    if line["isDefault"]:
+                        data.update({
+                            engine_info["engineName"].lower(): {
+                                "server_name": line["name"],
+                                "server_ip": line["server"],
+                                "server_port": line["port"],
+                            }
+                        })
+                        break
+        return data
+
     @staticmethod
     def _get_key_second_half(platform):
         """Get the key corresponding to the platform number.
@@ -145,8 +182,6 @@ class RayvisionTransfer(object):
 
         """
         return PLATFORM_ALIAS_MAP[platform]
-
-
 
 
     def create_cmd(self, cmd_params, db_ini_path=None, engine_type="aspera", server_ip=None, server_port=None,

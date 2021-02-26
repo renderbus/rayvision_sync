@@ -28,13 +28,14 @@ class RayvisionUpload(object):
 
     """
 
-    def __init__(self, api, db_config_path=None, transports_json="", transmitter_exe=""):
+    def __init__(self, api, db_config_path=None, transports_json="", transmitter_exe="", automatic_line=False):
         """Initialize instance."""
         params = create_transfer_params(api)
         params["transports_json"] = transports_json
         params["transmitter_exe"] = transmitter_exe
+        params["automatic_line"] = automatic_line
         self.api = api
-        self.trans = RayvisionTransfer(**params)
+        self.trans = RayvisionTransfer(api, **params)
         self.logger = self.trans.logger
 
         # load db config ini
