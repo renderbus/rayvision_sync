@@ -185,7 +185,7 @@ class RayvisionTransfer(object):
 
 
     def create_cmd(self, cmd_params, db_ini_path=None, engine_type="aspera", server_ip=None, server_port=None,
-                   main_user_id=None, main_input_bid=None):
+                   main_user_id=None, main_input_bid=None, network_mode=0):
         """Splice a cmd command.
 
         Args:
@@ -209,6 +209,9 @@ class RayvisionTransfer(object):
                 if not set, it is obtained from the default transport profile.
             main_user_id (str): Main account user id.
             main_input_bid (str): Main account input bid.
+            network_mode (int): network mode： 0: auto selected, default;
+                                               1: tcp;
+                                               2: udp;
 
         Returns:
             str: Cmd command.
@@ -228,7 +231,7 @@ class RayvisionTransfer(object):
                         ' -H "{serverIp}" -P "{serverPort}" -S "{download_id}"'
                         ' -U "{userId}" -T "{transmit_type}" -L "{local_path}"'
                         ' -R "{server_path}" -r "{maxConnectFailureCount}"'
-                        ' -K "{keep_path}" -s "{max_speed}" -C "{database_config_path}"'
+                        ' -K "{keep_path}" -s "{max_speed}" -C "{database_config_path}" -p {network_mode}'
                         ' ').format(
             exePath=self.transmitter_exe,
             engineType=engine_type,
@@ -242,5 +245,6 @@ class RayvisionTransfer(object):
             maxConnectFailureCount='2',  # default is 2.
             keep_path=cmd_params[4],
             max_speed=cmd_params[3],
-            database_config_path=db_ini_path)
+            database_config_path=db_ini_path,
+            network_mode=int(network_mode))
         return transmit_cmd
