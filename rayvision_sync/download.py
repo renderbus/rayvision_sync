@@ -82,7 +82,8 @@ class RayvisionDownload(object):
                  max_speed=None, print_log=True,
                  download_filename_format="true",
                  local_path=None, server_path=None,
-                 engine_type="aspera", server_ip=None, server_port=None):
+                 engine_type="aspera", server_ip=None, server_port=None,
+                 network_mode=0):
         """Download and update the undownloaded record.
 
         Args:
@@ -107,6 +108,9 @@ class RayvisionDownload(object):
                 if not set, it is obtained from the default transport profile.
             server_port (str, optional): transmit server port,
                 if not set, it is obtained from the default transport profile.
+            network_mode (int): network mode： 0: auto selected, default;
+                                               1: tcp;
+                                               2: udp;
 
         Returns:
             bool: True is success.
@@ -119,7 +123,8 @@ class RayvisionDownload(object):
 
         self._run_download(task_id_list, local_path, max_speed, print_log,
                            download_filename_format, server_path,
-                           engine_type=engine_type, server_ip=server_ip, server_port=server_port)
+                           engine_type=engine_type, server_ip=server_ip, server_port=server_port,
+                           network_mode=network_mode)
         self.logger.info("[Rayvision_sync end download.....]")
         return True
 
@@ -127,7 +132,8 @@ class RayvisionDownload(object):
                       print_log=False, sleep_time=10,
                       download_filename_format="true",
                       local_path=None,
-                      engine_type="aspera", server_ip=None, server_port=None):
+                      engine_type="aspera", server_ip=None, server_port=None,
+                      network_mode=0):
         """Automatic download (complete one frame download).
 
         Wait for all downloads to update undownloaded records.
@@ -153,7 +159,9 @@ class RayvisionDownload(object):
                 if not set, it is obtained from the default transport profile.
             server_port (str, optional): transmit server port,
                 if not set, it is obtained from the default transport profile.
-
+            network_mode (int): network mode： 0: auto selected, default;
+                                               1: tcp;
+                                               2: udp;
         Returns:
             bool: True is success.
 
@@ -165,14 +173,16 @@ class RayvisionDownload(object):
         self._auto_download_tool(task_id_list, sleep_time,
                                  max_speed, print_log, local_path,
                                  download_filename_format,
-                                 engine_type=engine_type, server_ip=server_ip, server_port=server_port)
+                                 engine_type=engine_type, server_ip=server_ip, server_port=server_port,
+                                 network_mode=network_mode)
         self.logger.info("[Rayvision_sync end auto_download.....]")
         return True
 
     def _auto_download_tool(self, task_id_list, sleep_time,
                             max_speed, print_log, local_path,
                             download_filename_format="true",
-                            engine_type=None, server_ip=None, server_port=None):
+                            engine_type=None, server_ip=None, server_port=None,
+                            network_mode=0):
         """Automatic download (complete one frame download).
 
         Args:
@@ -193,7 +203,8 @@ class RayvisionDownload(object):
                     is_task_end = self.manage_task.is_task_end(task_id)
                     self._run_download([task_id], local_path, max_speed,
                                        print_log, download_filename_format,
-                                       engine_type=engine_type, server_ip=server_ip, server_port=server_port)
+                                       engine_type=engine_type, server_ip=server_ip, server_port=server_port,
+                                       network_mode=network_mode)
 
                     if is_task_end is True:
                         self.logger.info('The tasks end: %s', task_id)
@@ -206,7 +217,8 @@ class RayvisionDownload(object):
                                            sleep_time=10,
                                            download_filename_format="true",
                                            local_path=None,
-                                           engine_type="aspera", server_ip=None, server_port=None):
+                                           engine_type="aspera", server_ip=None, server_port=None,
+                                           network_mode=0):
         """Auto download after the tasks render completed.
 
         Args:
@@ -230,6 +242,9 @@ class RayvisionDownload(object):
                 if not set, it is obtained from the default transport profile.
             server_port (str, optional): transmit server port,
                 if not set, it is obtained from the default transport profile.
+            network_mode (int): network mode： 0: auto selected, default;
+                                               1: tcp;
+                                               2: udp;
 
         Returns:
             bool: True is success.
@@ -252,8 +267,8 @@ class RayvisionDownload(object):
                         self._run_download([task_id], local_path,
                                            max_speed, print_log,
                                            download_filename_format,
-                                           engine_type=engine_type, server_ip=server_ip, server_port=server_port
-                                           )
+                                           engine_type=engine_type, server_ip=server_ip, server_port=server_port,
+                                           network_mode=network_mode)
                         task_id_list.remove(task_id)
             else:
                 break
@@ -264,7 +279,8 @@ class RayvisionDownload(object):
 
     def _run_download(self, task_id_list, local_path, max_speed=None,
                       print_log=True, download_filename_format="true",
-                      server_path=None, engine_type="aspera", server_ip=None, server_port=None):
+                      server_path=None, engine_type="aspera", server_ip=None, server_port=None,
+                      network_mode=0):
         """Execute the cmd command for multitasking download.
 
         Args:
@@ -284,6 +300,9 @@ class RayvisionDownload(object):
                 if not set, it is obtained from the default transport profile.
             server_port (str, optional): transmit server port,
                 if not set, it is obtained from the default transport profile.
+            network_mode (int): network mode： 0: auto selected, default;
+                                               1: tcp;
+                                               2: udp;
 
         """
         transmit_type = 'download_path'
@@ -310,7 +329,8 @@ class RayvisionDownload(object):
                           max_speed, download_filename_format, 'output_bid']
 
             cmd = self.trans.create_cmd(cmd_params, engine_type=engine_type,
-                                        server_ip=server_ip, server_port=server_port)
+                                        server_ip=server_ip, server_port=server_port,
+                                        network_mode=network_mode)
             tranfer_code = run_cmd(cmd, print_log=print_log, logger=self.logger)
             if tranfer_code == 1:
                 run_cmd(cmd, print_log=print_log, logger=self.logger)
