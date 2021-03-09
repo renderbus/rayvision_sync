@@ -7,6 +7,7 @@ Upload the scene's configuration file and asset file.
 # Import built-in modules
 import configparser
 import os
+import logging
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
 
@@ -19,7 +20,8 @@ from rayvision_sync.utils import read_ini_config
 from rayvision_sync.utils import run_cmd
 from rayvision_sync.utils import str2unicode
 from rayvision_sync.utils import upload_retry
-
+from rayvision_sync.constants import PACKAGE_NAME
+from rayvision_log import init_logger
 
 class RayvisionUpload(object):
     """Upload files.
@@ -28,8 +30,37 @@ class RayvisionUpload(object):
 
     """
 
-    def __init__(self, api, db_config_path=None, transports_json="", transmitter_exe="", automatic_line=False, internet_provider=""):
-        """Initialize instance."""
+    def __init__(self, api,
+                 db_config_path=None,
+                 transports_json="",
+                 transmitter_exe="",
+                 automatic_line=False,
+                 internet_provider="",
+                 logger=None,
+                 log_folder=None,
+                 log_name=None,
+                 log_level="DEBUG"
+                 ):
+        """Initialize instance.
+
+        Args:
+            api (object): rayvision api object.
+            db_config_path (string): Customize db_config.ini absolute path.
+            transports_json (string): Customize the absolute path of the transfer configuration file.
+            transmitter_exe (string): Customize the absolute path of the transfer execution file.
+            automatic_line (bool): Whether to automatically obtain the transmission line, the default is "False"
+            internet_provider (string): Network provider.
+            logger (object): Customize log object.
+            log_folder (string): Customize the absolute path of the folder where logs are stored.
+            log_name (string): Custom log file name, the system user name will be searched by default.
+            log_level (string):  Set log level, example: "DEBUG","INFO","WARNING","ERROR"
+        """
+        self.logger = logger
+        if not self.logger:
+            init_logger(PACKAGE_NAME, log_folder, log_name)
+            self.logger = logging.getLogger(__name__)
+            self.logger.setLevel(level=log_level.upper())
+
         params = create_transfer_params(api)
         params["transports_json"] = transports_json
         params["transmitter_exe"] = transmitter_exe
@@ -37,7 +68,6 @@ class RayvisionUpload(object):
         params["internet_provider"] = internet_provider
         self.api = api
         self.trans = RayvisionTransfer(api, **params)
-        self.logger = self.trans.logger
 
         # load db config ini
         self.transfer_log_path, self.redis_config, self.sqlite_config, self.database_config = \

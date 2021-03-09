@@ -9,6 +9,7 @@ the un-downloaded task is recorded (the task is rendered).
 import os
 # Import built-in modules
 import time
+import logging
 
 from rayvision_sync.manage import RayvisionManageTask
 # Import local modules
@@ -16,7 +17,8 @@ from rayvision_sync.transfer import RayvisionTransfer
 from rayvision_sync.utils import create_transfer_params
 from rayvision_sync.utils import run_cmd
 from rayvision_sync.utils import str2unicode
-
+from rayvision_log import init_logger
+from rayvision_sync.constants import PACKAGE_NAME
 
 class RayvisionDownload(object):
     """Downloader.
@@ -25,8 +27,29 @@ class RayvisionDownload(object):
 
     """
 
-    def __init__(self, api, transports_json="", transmitter_exe="", automatic_line=False, internet_provider=""):
-        """Initialize instance."""
+    def __init__(self, api,
+                 transports_json="",
+                 transmitter_exe="",
+                 automatic_line=False,
+                 internet_provider="",
+                 logger=None,
+                 log_folder=None,
+                 log_name=None,
+                 log_level="DEBUG",
+                 ):
+        """Initialize instance.
+
+        Args:
+            api (object): rayvision api object.
+            transports_json (string): Customize the absolute path of the transfer configuration file.
+            transmitter_exe (string): Customize the absolute path of the transfer execution file.
+            automatic_line (bool): Whether to automatically obtain the transmission line, the default is "False"
+            internet_provider (string): Network provider.
+            logger (object): Customize log object.
+            log_folder (string): Customize the absolute path of the folder where logs are stored.
+            log_name (string): Custom log file name, the system user name will be searched by default.
+            log_level (string):  Set log level, example: "DEBUG","INFO","WARNING","ERROR"
+        """
         params = create_transfer_params(api)
         params["transports_json"] = transports_json
         params["transmitter_exe"] = transmitter_exe
@@ -35,7 +58,11 @@ class RayvisionDownload(object):
         self.api = api
         self.trans = RayvisionTransfer(api, **params)
         self.manage_task = self.trans.manage_task or RayvisionManageTask(api.query)
-        self.logger = self.trans.logger
+        self.logger = logger
+        if not self.logger:
+            init_logger(PACKAGE_NAME, log_folder, log_name)
+            self.logger = logging.getLogger(__name__)
+            self.logger.setLevel(level=log_level.upper())
 
     def _download_log(self, task_id_list, local_path):
         """Download log Settings.
