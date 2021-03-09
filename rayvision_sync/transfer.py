@@ -11,7 +11,6 @@ from __future__ import print_function
 
 import codecs
 import json
-import logging
 import os
 import sys
 
@@ -24,7 +23,7 @@ class RayvisionTransfer(object):
 
     def __init__(self, api, config_bid, input_bid, domain, platform, local_os,
                  user_id, automatic_line, output_bid=None, manage_task=None,
-                 transports_json="", transmitter_exe="", internet_provider=""
+                 transports_json="", transmitter_exe="", internet_provider="",
                  ):
         """Initialize the configuration of the transfer.
 
@@ -43,7 +42,7 @@ class RayvisionTransfer(object):
             internet_provider (str): Network provider.
         """
         self.api = api
-        self.logger = logging.getLogger(__name__)
+
         self.config_bid = config_bid
         self.input_bid = input_bid
         self.output_bid = output_bid
@@ -66,14 +65,13 @@ class RayvisionTransfer(object):
         if os.path.exists(transmitter_exe):
             self.transmitter_exe = transmitter_exe
         else:
-            self.transmitter_exe = self.init_transmitter(self.local_os)
+            self.transmitter_exe = self.init_transmitter()
         if automatic_line:
             self.transport_info = self.parse_service_transfe_line(internet_provider)
         else:
             self.transport_info = self.parse_transports_json(transports_json)
 
-    @staticmethod
-    def init_transmitter(local_os):
+    def init_transmitter(self):
         """Gets the path of the transfer software.
 
         Args:
@@ -83,9 +81,9 @@ class RayvisionTransfer(object):
 
         """
         current_dir = os.path.dirname(os.path.realpath(__file__))
-        if local_os == 'windows':
+        if self.local_os == 'windows':
             transmitter_exe = os.path.join(current_dir, 'transmission',
-                                           local_os,
+                                           'windows',
                                            'rayvision_transmitter.exe')
         else:
             transmitter_exe = os.path.join(current_dir, 'transmission',

@@ -1,7 +1,6 @@
 """Manage operations after generating tasks."""
 
 from builtins import str
-import logging
 
 from rayvision_sync.utils import get_task_status_description
 
@@ -15,7 +14,6 @@ class RayvisionManageTask(object):
     def __init__(self, query):
         """Instantiate API interface."""
         self._query = query
-        self.logger = logging.getLogger(__name__)
 
     def is_task_end(self, task_id):
         """Check if the task rendering ends.
