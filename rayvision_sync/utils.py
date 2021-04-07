@@ -7,6 +7,7 @@ import codecs
 import json
 import logging
 import os
+import re
 import subprocess
 import sys
 import time
@@ -20,7 +21,7 @@ from rayvision_sync.constants import TASK_STATUS_DESCRIPTION
 from rayvision_sync.exception import RayvisionError
 
 
-def print_to_log(cmd, logger):
+def print_to_log(cmd, logger, is_record=False, redis_flag=None, redis_obj=None):
     """Output the CMD command information.
 
     If there is an error in the log, it will be recorded in a list.
@@ -37,13 +38,23 @@ def print_to_log(cmd, logger):
 
     """
     err_messages = []
+    if is_record and not redis_obj:
+        import redis
+        redis_obj = redis.Redis(host='localhost', port=6379, db=2, decode_responses=True)
     while True:
         result_line = cmd.stdout.readline()
         if result_line:
             result_line = result_line.strip()
             if result_line:
+                result_line = str2unicode(result_line)
+                if is_record:
+                    complite = re.compile(".*?upload file done.*?\((.*?)\).*")
+                    obj = re.search(complite, result_line)
+                    if obj:
+                        upload_done_file = obj.group(1).strip()
+                        insert_redis(path=upload_done_file, redis_db=redis_obj, redis_flag=redis_flag)
+
                 if logger:
-                    result_line = str2unicode(result_line)
                     logger(result_line)
                     if ('upload file fail' in result_line or
                             ('get path' in result_line and
@@ -96,7 +107,8 @@ def handle_cmd_result(flag, returncode, err_messages, logger=None):
     return returncode
 
 
-def run_cmd(cmd_str, my_shell=True, print_log=True, flag=None, logger=None):
+def run_cmd(cmd_str, my_shell=True, print_log=True, flag=None, logger=None, is_record=False, redis_flag=None,
+            redis_obj=None):
     """Run cmd.
 
     If the cmd runs with an error, it will print the error message and return
@@ -109,6 +121,7 @@ def run_cmd(cmd_str, my_shell=True, print_log=True, flag=None, logger=None):
         print_log (bool, optional): Print log, True: print, False: not print.
         flag (bool, optional): default is None.
         logger (logging, optional): Log object.
+        redis_obj (object, optional): redis object
 
     Returns:
         bool: True is success, False is wrong.
@@ -134,7 +147,7 @@ def run_cmd(cmd_str, my_shell=True, print_log=True, flag=None, logger=None):
                                   stderr=subprocess.STDOUT,
                                   shell=my_shell)
 
-    err_messages = print_to_log(cmd_result, logger)
+    err_messages = print_to_log(cmd_result, logger, is_record=is_record, redis_flag=redis_flag, redis_obj=redis_obj)
     cmd_result.communicate()
     returncode = cmd_result.returncode
     return handle_cmd_result(flag, returncode, err_messages, logger)
@@ -353,3 +366,18 @@ def cutting_upload(upload_path, max_resources_number=None, after_cutting_positio
         count += 1
         cut_json_pool.append(to_path)
     return cut_json_pool
+
+
+def insert_redis(path, redis_db, redis_flag=None):
+    """Record upload file information to Redis.
+
+    Args:
+        path (str): file path.
+        redis_db (redis object): redis handle.
+        redis_flag (): Redis database tag.
+
+    Returns:
+
+    """
+    redis_flag = redis_flag if redis_flag else "upload_done"
+    redis_db.hset(redis_flag, path, int(time.time()))

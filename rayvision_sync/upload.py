@@ -166,7 +166,7 @@ class RayvisionUpload(object):
     def upload(self, task_id, task_json_path, tips_json_path, asset_json_path,
                upload_json_path, max_speed=None, transmit_type="upload_json",
                engine_type="aspera", server_ip=None, server_port=None,
-               network_mode=0):
+               network_mode=0, is_record=False, redis_flag=None, redis_obj=None):
         """Run the cmd command to upload the configuration file.
 
         Args:
@@ -185,9 +185,12 @@ class RayvisionUpload(object):
                 if not set, it is obtained from the default transport profile.
             server_port (str, optional): transmit server port,
                 if not set, it is obtained from the default transport profile.
-            network_mode (int): network mode： 0: auto selected, default;
+            network_mode (int): network mode: 0: auto selected, default;
                                                1: tcp;
                                                2: udp;
+            is_record (bool): Whether to save upload records. default False.
+            redis_flag (str): Save uploaded Redis database tag name.
+            redis_obj (object): redis database object.
 
         Returns:
             bool: True is success, False is failure.
@@ -206,7 +209,8 @@ class RayvisionUpload(object):
             return False
         result_asset = self.upload_asset(upload_json_path, max_speed, transmit_type,
                                          engine_type=engine_type, server_ip=server_ip, server_port=server_port,
-                                         network_mode=network_mode)
+                                         network_mode=network_mode, is_record=is_record, redis_flag=redis_flag,
+                                         redis_obj=redis_obj)
         if not result_asset:
             return False
         return True
@@ -226,7 +230,7 @@ class RayvisionUpload(object):
                 if not set, it is obtained from the default transport profile.
             server_port (str, optional): transmit server port,
                 if not set, it is obtained from the default transport profile.
-            network_mode (int): network mode： 0: auto selected, default;
+            network_mode (int): network mode: 0: auto selected, default;
                                                1: tcp;
                                                2: udp;
 
@@ -267,7 +271,8 @@ class RayvisionUpload(object):
     @upload_retry
     def upload_asset(self, upload_json_path, max_speed=None, is_db=True,
                      engine_type="aspera", server_ip=None, server_port=None,
-                     transmit_type="upload_json", network_mode=0):
+                     transmit_type="upload_json", network_mode=0, redis_flag=None,
+                     is_record=False, redis_obj=None):
         """Run the cmd command to upload asset files.
 
         Args:
@@ -281,9 +286,12 @@ class RayvisionUpload(object):
             transmit_type (str): transmit type:
                 1. upload_json: upload from json file,in this type, next remote will not used.
                 2. upload_list: upload from file list.
-            network_mode (int): network mode： 0: auto selected, default;
+            network_mode (int): network mode: 0: auto selected, default;
                                                1: tcp;
                                                2: udp;
+            is_record (bool): Whether to save upload records. default False.
+            redis_flag (str): Save uploaded Redis database tag name.
+            redis_obj (object): redis database object.
 
         Returns:
             bool: True is success, False is failure.
@@ -301,7 +309,7 @@ class RayvisionUpload(object):
                                     main_user_id=main_user_id, main_input_bid=main_input_bid,
                                     network_mode=network_mode)
 
-        return run_cmd(cmd, flag=True, logger=self.logger)
+        return run_cmd(cmd, flag=True, logger=self.logger, is_record=is_record, redis_flag=redis_flag, redis_obj=redis_obj)
 
     def load_db_config(self, db_config_path=None):
         if not bool(db_config_path) or not os.path.exists(db_config_path):

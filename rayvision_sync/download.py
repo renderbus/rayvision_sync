@@ -1,3 +1,4 @@
+# coding=utf-8
 """Download models.
 
 Including download, automatic download (the task is fully rendered,
@@ -135,7 +136,7 @@ class RayvisionDownload(object):
                 if not set, it is obtained from the default transport profile.
             server_port (str, optional): transmit server port,
                 if not set, it is obtained from the default transport profile.
-            network_mode (int): network mode： 0: auto selected, default;
+            network_mode (int): network mode: 0: auto selected, default;
                                                1: tcp;
                                                2: udp;
 
@@ -186,9 +187,9 @@ class RayvisionDownload(object):
                 if not set, it is obtained from the default transport profile.
             server_port (str, optional): transmit server port,
                 if not set, it is obtained from the default transport profile.
-            network_mode (int): network mode： 0: auto selected, default;
-                                               1: tcp;
-                                               2: udp;
+            network_mode (int): network mode： 0: auto selected, default,
+                                               1:tcp
+                                               2:udp
         Returns:
             bool: True is success.
 
