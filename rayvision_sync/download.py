@@ -15,6 +15,7 @@ import logging
 from rayvision_sync.manage import RayvisionManageTask
 # Import local modules
 from rayvision_sync.transfer import RayvisionTransfer
+from rayvision_sync.exception import DownloadFailed
 from rayvision_sync.utils import create_transfer_params
 from rayvision_sync.utils import run_cmd
 from rayvision_sync.utils import str2unicode
@@ -360,5 +361,5 @@ class RayvisionDownload(object):
                                         server_ip=server_ip, server_port=server_port,
                                         network_mode=network_mode)
             tranfer_code = run_cmd(cmd, print_log=print_log, logger=self.logger)
-            if tranfer_code == 1:
-                run_cmd(cmd, print_log=print_log, logger=self.logger)
+            if tranfer_code != 0:
+                raise DownloadFailed('%s Download failed' % output_file_name)
