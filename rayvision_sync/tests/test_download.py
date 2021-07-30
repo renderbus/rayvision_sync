@@ -4,6 +4,7 @@
 import pytest
 
 from rayvision_sync.manage import RayvisionManageTask
+from rayvision_sync.exception import DownloadFailed
 
 
 @pytest.mark.parametrize('task_id_list,max_speed,sleep_time', [
@@ -17,8 +18,8 @@ def test_download(rayvision_download, task_id_list, max_speed, sleep_time,
     mocker_task_id = mocker.patch.object(RayvisionManageTask,
                                          'get_task_status')
     mocker_task_id.return_value = expected_result
-    result = rayvision_download.download(task_id_list, max_speed, sleep_time)
-    assert result is True
+    with pytest.raises(DownloadFailed):
+        rayvision_download.download(task_id_list, max_speed, sleep_time)
 
 
 @pytest.mark.parametrize('task_id_list,max_speed,sleep_time', [
@@ -32,9 +33,8 @@ def test_auto_download(rayvision_download, task_id_list, max_speed, sleep_time,
     mocker_task_id = mocker.patch.object(RayvisionManageTask,
                                          'get_task_status')
     mocker_task_id.return_value = expected_result
-    result = rayvision_download.auto_download(task_id_list, max_speed,
-                                              sleep_time)
-    assert result is True
+    with pytest.raises(DownloadFailed):
+        rayvision_download.download(task_id_list, max_speed, sleep_time)
 
 
 @pytest.mark.parametrize('task_id_list,max_speed,sleep_time', [
@@ -48,6 +48,5 @@ def test_auto_download_after_task_completed(rayvision_download, task_id_list,
     mocker_task_id = mocker.patch.object(RayvisionManageTask,
                                          'get_task_status')
     mocker_task_id.return_value = expected_result
-    result = rayvision_download.auto_download_after_task_completed(
-        task_id_list, max_speed, sleep_time)
-    assert result is True
+    with pytest.raises(DownloadFailed):
+        rayvision_download.download(task_id_list, max_speed, sleep_time)
