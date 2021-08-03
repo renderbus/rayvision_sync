@@ -225,21 +225,33 @@ class RayvisionDownload(object):
                 "false" : download directly without doing processing.
 
         """
+        download_failed_list = list()
         while True:
             if task_id_list:
                 time.sleep(float(sleep_time))
+                task_id_list_copy = task_id_list.copy()
                 for task_id in task_id_list:
+                    download_flag = True
                     is_task_end = self.manage_task.is_task_end(task_id)
-                    self._run_download([task_id], local_path, max_speed,
-                                       print_log, download_filename_format,
-                                       engine_type=engine_type, server_ip=server_ip, server_port=server_port,
-                                       network_mode=network_mode)
+                    try:
+                        self._run_download([task_id], local_path, max_speed,
+                                           print_log, download_filename_format,
+                                           engine_type=engine_type, server_ip=server_ip, server_port=server_port,
+                                           network_mode=network_mode)
+                    except DownloadFailed:
+                        download_flag = False
+
+                    if is_task_end is True and download_flag is False:
+                        download_failed_list.append(task_id)
 
                     if is_task_end is True:
                         self.logger.info('The tasks end: %s', task_id)
-                        task_id_list.remove(task_id)
+                        task_id_list_copy.remove(task_id)
+                task_id_list = task_id_list_copy.copy()
             else:
                 break
+        if download_failed_list:
+            raise DownloadFailed('Finally tasks download failed: %s' % str(download_failed_list))
 
     def auto_download_after_task_completed(self, task_id_list=None,
                                            max_speed=None, print_log=True,
