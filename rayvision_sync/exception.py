@@ -24,7 +24,7 @@ class UnsupportedDatabaseError(Exception):
 
 
 class UnsupportedEngineType(Exception):
-    """Engine Only Support aspera and raysync"""
+    """Engine Only Support aspera and raysyncproxy"""
 
 
 class DownloadFailed(Exception):

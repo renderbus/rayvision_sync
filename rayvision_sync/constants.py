@@ -59,7 +59,7 @@ WINDOWS_LOCAL_ENV = "USERPROFILE"
 LINUX_LOCAL_ENV = "HOME"
 RENDERFARM_SDK = "renderfarm_sdk"
 
-ENGINE_TYPE = ['aspera', 'raysync']
+ENGINE_TYPE = ['aspera', 'raysyncproxy']
 
 PLATFORM_ALIAS_MAP = {
             '2': 'www2',

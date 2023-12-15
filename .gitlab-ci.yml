@@ -1,0 +1,5 @@
+# Script for how Gitlab builds and deploys the package to the server.
+include:
+  - project: internal/gitlab_ci_config_template
+    ref: master
+    file: templates/.gitlab-ci-template.yml

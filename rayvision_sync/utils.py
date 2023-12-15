@@ -345,14 +345,14 @@ def cutting_upload(upload_path, max_resources_number=None, after_cutting_positio
     if not os.path.exists(upload_path):
         raise RayvisionError(200001, "upload file is not exist: {}".format(upload_path))
     if max_resources_number is None:
-        return upload_path
+        return [upload_path]
     if after_cutting_position is None or not os.path.exists(after_cutting_position):
         after_cutting_position = os.path.dirname(upload_path)
 
     upload_info = json_load(upload_path)
     asset = upload_info.get("asset", [])
     if max_resources_number >= len(asset):
-        return
+        return [upload_path]
     count = 1
     cut_json_pool = []
     for per_index in range(0, len(asset) + 1, max_resources_number):
@@ -381,3 +381,4 @@ def insert_redis(path, redis_db, redis_flag=None):
     """
     redis_flag = redis_flag if redis_flag else "upload_done"
     redis_db.hset(redis_flag, path, int(time.time()))
+

@@ -59,7 +59,9 @@ def expected_result():
             'is_opener': '0',
             'task_status_text': 'render_task_status_0',
             'task_status_code': '30',
-            'output_file_name': 'test_info_1'
+            'output_file_name': 'test_info_1',
+            'userId': '1001',
+            'bid': "121"
         },
         {
             'task_id': '647611',
@@ -71,14 +73,18 @@ def expected_result():
                     'is_opener': '1',
                     'task_status_text': 'render_task_status_-2',
                     'task_status_code': '45',
-                    'output_file_name': 'test_info_3'
+                    'output_file_name': 'test_info_3',
+                    'userId': '1002',
+                    "bid": "122"
                 }
             ],
             'task_status_description': 'Abort',
             'is_opener': '1',
             'task_status_text': 'render_task_status_-1',
             'task_status_code': '35',
-            'output_file_name': 'test_info_2'
+            'output_file_name': 'test_info_2',
+            'userId': '1002',
+            "bid": "122"
         }
     ]
 
@@ -88,6 +94,20 @@ def api(user_info_dict, mocker, tmpdir):
     """Create connect API object."""
     mocker_task_id = mocker.patch.object(Connect, "post")
     mocker_task_id.return_value = {}
+    return_value = {
+        "aspera": {
+            "server_name": "TEST_CTCC",
+            "server_ip": "45.251.92.29",
+            "server_port": "10221"
+        },
+        "raysync": {
+            "server_name": "TEST_CTCC",
+            "server_ip": "45.251.92.29",
+            "server_port": "10200"
+        }
+    }
+    mocker.patch('rayvision_sync.transfer.RayvisionTransfer.parse_service_transfe_line',
+                 return_value=return_value)
     rayvision_api = RayvisionAPI(**user_info_dict)
     if "win" in sys.platform.lower():
         local_os = "windows"

@@ -20,7 +20,8 @@ setup(
     entry_points={},
     install_requires=list(parse_requirements("requirements.txt")),
     package_data={
-        'rayvision_sync': ["./transmission/*", "./transmission/*/*", "./transmission/*/*/*", "*.ini"],
+        'rayvision_sync': ["./transmission/*", "./transmission/*/*", "./transmission/*/*/*", "./transmission/*/*/*/*", "*.ini",
+                           "./rayvision_raysync/*", "./rayvision_raysync/*/*", "./rayvision_raysync/*/*/*", "./rayvision_raysync/*/*/*/*"],
     },
     classifiers=[
         "Programming Language :: Python",
@@ -28,5 +29,5 @@ setup(
         "Programming Language :: Python :: 3",
     ],
     use_scm_version=True,
-    setup_requires=["setuptools_scm"],
+    setup_requires=["setuptools_scm<8.0.0"],
 )

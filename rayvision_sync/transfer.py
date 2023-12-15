@@ -183,7 +183,7 @@ class RayvisionTransfer(object):
 
 
     def create_cmd(self, cmd_params, db_ini_path=None, engine_type="aspera", server_ip=None, server_port=None,
-                   main_user_id=None, main_input_bid=None, network_mode=0):
+                   main_user_id=None, main_input_bid=None, bid=None, network_mode=0):
         """Splice a cmd command.
 
         Args:
@@ -200,13 +200,14 @@ class RayvisionTransfer(object):
                     ]
 
             db_ini_path (str): Database path.
-            engine_type (str, optional): set engine type, support "aspera" and "raysync", Default "aspera".
+            engine_type (str, optional): set engine type, support "aspera" and "raysyncproxy", Default "aspera".
             server_ip (str, optional): transmit server host,
                 if not set, it is obtained from the default transport profile.
             server_port (str, optional): transmit server port,
                 if not set, it is obtained from the default transport profile.
             main_user_id (str): Main account user id.
             main_input_bid (str): Main account input bid.
+            bid (str): Storage id.
             network_mode (int): network mode： 0: auto selected, default;
                                                1: tcp;
                                                2: udp;
@@ -223,7 +224,7 @@ class RayvisionTransfer(object):
             engine_type = "aspera"
         if engine_type not in ENGINE_TYPE:
             msg = "{} is not a supported transport engine, " \
-                  "currently only support 'aspera' and 'raysync'".format(engine_type)
+                  "currently only support 'aspera' and 'raysyncproxy'".format(engine_type)
             raise UnsupportedEngineType(msg)
         transmit_cmd = ('echo y|"{exePath}" -E "{engineType}"'
                         ' -H "{serverIp}" -P "{serverPort}" -S "{download_id}"'
@@ -235,8 +236,8 @@ class RayvisionTransfer(object):
             engineType=engine_type,
             serverIp=server_ip if server_ip else self.transport_info[engine_type]['server_ip'],
             serverPort=server_port if server_port else self.transport_info[engine_type]['server_port'],
-            download_id=main_input_bid if main_input_bid else self.user_info[cmd_params[5]],
-            userId=main_user_id if main_user_id else self.user_id,
+            download_id=main_input_bid if main_input_bid else bid or self.user_info[cmd_params[5]],
+            userId=main_user_id if main_user_id else self.user_id ,
             transmit_type=cmd_params[0],
             local_path=cmd_params[1],
             server_path=cmd_params[2],

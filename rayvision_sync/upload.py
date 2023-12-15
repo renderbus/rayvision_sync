@@ -12,15 +12,16 @@ import subprocess
 from concurrent.futures import ThreadPoolExecutor
 
 # Import local modules
+from rayvision_sync.rayvision_raysync.transfer_raysync import RayvisionTransferRaysync
 from rayvision_sync import RayvisionTransfer
 from rayvision_sync.constants import TRANSFER_LOG, RENDERFARM_SDK, WINDOWS_LOCAL_ENV, LINUX_LOCAL_ENV, RAYVISION_DB
-from rayvision_sync.exception import RayvisionError, UnsupportedDatabaseError
+from rayvision_sync.exception import RayvisionError, UnsupportedDatabaseError, UnsupportedEngineType
 from rayvision_sync.utils import create_transfer_params, get_share_info
 from rayvision_sync.utils import read_ini_config
 from rayvision_sync.utils import run_cmd
 from rayvision_sync.utils import str2unicode
 from rayvision_sync.utils import upload_retry
-from rayvision_sync.constants import PACKAGE_NAME
+from rayvision_sync.constants import PACKAGE_NAME, ENGINE_TYPE
 from rayvision_log import init_logger
 
 class RayvisionUpload(object):
@@ -34,7 +35,7 @@ class RayvisionUpload(object):
                  db_config_path=None,
                  transports_json="",
                  transmitter_exe="",
-                 automatic_line=False,
+                 automatic_line=True,
                  internet_provider="",
                  logger=None,
                  log_folder=None,
@@ -48,7 +49,7 @@ class RayvisionUpload(object):
             db_config_path (string): Customize db_config.ini absolute path.
             transports_json (string): Customize the absolute path of the transfer configuration file.
             transmitter_exe (string): Customize the absolute path of the transfer execution file.
-            automatic_line (bool): Whether to automatically obtain the transmission line, the default is "False"
+            automatic_line (bool): Whether to automatically obtain the transmission line, the default is "True"
             internet_provider (string): Network provider.
             logger (object): Customize log object.
             log_folder (string): Customize the absolute path of the folder where logs are stored.
@@ -68,6 +69,9 @@ class RayvisionUpload(object):
         params["internet_provider"] = internet_provider
         self.api = api
         self.trans = RayvisionTransfer(api, **params)
+        self.raysync_engine = RayvisionTransferRaysync(self.api.user_info.get("domain"), self.trans.user_id, self.api.user_info.get("user_name"),
+                                                       self.api.query.get_raysync_user_key().get('raySyncUserKey'),
+                                                       self.trans.platform, self.logger)
 
         # load db config ini
         self.transfer_log_path, self.redis_config, self.sqlite_config, self.database_config = \
@@ -166,7 +170,7 @@ class RayvisionUpload(object):
     def upload(self, task_id, task_json_path, tips_json_path, asset_json_path,
                upload_json_path, max_speed=None, transmit_type="upload_json",
                engine_type="aspera", server_ip=None, server_port=None,
-               network_mode=0, is_record=False, redis_flag=None, redis_obj=None):
+               network_mode=0, is_record=False, redis_flag=None, redis_obj=None, proxy_ip=None, proxy_port=None):
         """Run the cmd command to upload the configuration file.
 
         Args:
@@ -180,7 +184,7 @@ class RayvisionUpload(object):
             transmit_type (str): transmit type:
                 1. upload_json: upload from json file,in this type, next remote will not used.
                 2. upload_list: upload from file list.
-            engine_type (str, optional): set engine type, support "aspera" and "raysync", Default "aspera".
+            engine_type (str, optional): set engine type, support "aspera" and "raysyncproxy", Default "aspera".
             server_ip (str, optional): transmit server host,
                 if not set, it is obtained from the default transport profile.
             server_port (str, optional): transmit server port,
@@ -191,6 +195,8 @@ class RayvisionUpload(object):
             is_record (bool): Whether to save upload records. default False.
             redis_flag (str): Save uploaded Redis database tag name.
             redis_obj (object): redis database object.
+            proxy_ip(str): proxy ip, only supports raysyncproxy engine eg:10.14.88.66.
+            proxy_port(str): proxy port, only supports raysyncproxy engine eg:5555.
 
         Returns:
             bool: True is success, False is failure.
@@ -204,20 +210,20 @@ class RayvisionUpload(object):
         ]
         result_config = self.upload_config(task_id, config_file_list, max_speed,
                                            engine_type=engine_type, server_ip=server_ip, server_port=server_port,
-                                           network_mode=network_mode)
+                                           network_mode=network_mode, proxy_ip=proxy_ip, proxy_port=proxy_port)
         if not result_config:
             return False
-        result_asset = self.upload_asset(upload_json_path, max_speed, transmit_type,
+        result_asset = self.upload_asset(upload_json_path, max_speed, transmit_type=transmit_type,
                                          engine_type=engine_type, server_ip=server_ip, server_port=server_port,
                                          network_mode=network_mode, is_record=is_record, redis_flag=redis_flag,
-                                         redis_obj=redis_obj)
+                                         redis_obj=redis_obj, proxy_ip=proxy_ip, proxy_port=proxy_port)
         if not result_asset:
             return False
         return True
 
     def upload_config(self, task_id, config_file_list, max_speed=None,
                       engine_type="aspera", server_ip=None, server_port=None,
-                      network_mode=0):
+                      network_mode=0, proxy_ip=None, proxy_port=None):
         """Run the cmd command to upload configuration profiles.
 
         Args:
@@ -225,7 +231,7 @@ class RayvisionUpload(object):
             config_file_list (list): Configuration file path list.
             max_speed (str): Maximum transmission speed, default value
                 is 1048576 KB/S.
-            engine_type (str, optional): set engine type, support "aspera" and "raysync", Default "aspera".
+            engine_type (str, optional): set engine type, support "aspera" and "raysyncproxy", Default "aspera".
             server_ip (str, optional): transmit server host,
                 if not set, it is obtained from the default transport profile.
             server_port (str, optional): transmit server port,
@@ -233,6 +239,8 @@ class RayvisionUpload(object):
             network_mode (int): network mode: 0: auto selected, default;
                                                1: tcp;
                                                2: udp;
+            proxy_ip(str): proxy ip, only supports raysyncproxy engine eg:10.14.88.66.
+            proxy_port(str): proxy port, only supports raysyncproxy engine eg:5555.
 
         Returns:
             bool: True is success, False is failure.
@@ -243,7 +251,6 @@ class RayvisionUpload(object):
 
         for config_path in config_file_list:
             local_path = str2unicode(config_path)
-
             config_basename = os.path.basename(config_path)
             server_path = '/{0}/cfg/{1}'.format(task_id, config_basename)
             server_path = str2unicode(server_path)
@@ -253,12 +260,34 @@ class RayvisionUpload(object):
                 continue
             cmd_params = [transmit_type, local_path, server_path, max_speed,
                           'false', 'config_bid']
-            cmd = self.trans.create_cmd(cmd_params, engine_type=engine_type, server_ip=server_ip,
-                                        server_port=server_port, network_mode=network_mode)
 
             times = 0
             while True:
-                result = run_cmd(cmd, flag=True, logger=self.logger)
+                if engine_type == "aspera":
+                    cmd = self.trans.create_cmd(cmd_params, engine_type=engine_type, server_ip=server_ip,
+                                                server_port=server_port, network_mode=network_mode)
+                    result = run_cmd(cmd, flag=True, logger=self.logger)
+                elif engine_type == "raysyncproxy":
+                    paramDict = {
+                        "server_ip": server_ip if server_ip else self.trans.transport_info[engine_type]['server_ip'],
+                        "server_port": server_port if server_port else self.trans.transport_info[engine_type]['server_port'],
+                        "local_path": local_path,
+                        "server_path": server_path,
+                        "storage_id": self.trans.config_bid,
+                        "input_id": self.trans.input_bid,
+                        "task_type": "upload",
+                        "file_type": "json",
+                        "task_id": task_id,
+                        "max_speed": max_speed,
+                        "network_mode": network_mode,
+                        "proxy_ip": proxy_ip,
+                        "proxy_port": proxy_port
+                    }
+                    result = self.raysync_engine.start_transfer(**paramDict)
+                else:
+                    msg = "{} is not a supported transport engine, " \
+                      "currently only support 'aspera' and 'raysyncproxy'".format(engine_type)
+                    raise UnsupportedEngineType(msg)
                 if result:
                     if times == 9:
                         raise RayvisionError(20004, "%s upload failed" %
@@ -272,7 +301,7 @@ class RayvisionUpload(object):
     def upload_asset(self, upload_json_path, max_speed=None, is_db=True,
                      engine_type="aspera", server_ip=None, server_port=None,
                      transmit_type="upload_json", network_mode=0, redis_flag=None,
-                     is_record=False, redis_obj=None):
+                     is_record=False, redis_obj=None, proxy_ip=None, proxy_port=None):
         """Run the cmd command to upload asset files.
 
         Args:
@@ -280,7 +309,7 @@ class RayvisionUpload(object):
             max_speed (str): Maximum transmission speed, default value
                 is 1048576 KB/S.
             is_db (bool): Whether to produce local database record upload file.
-            engine_type (str): Transport engine type, supports "aspera" and "raysync".
+            engine_type (str): Transport engine type, supports "aspera" and "raysyncproxy".
             server_ip (str): Transport server IP.
             server_port (str): Transport server port.
             transmit_type (str): transmit type:
@@ -292,6 +321,8 @@ class RayvisionUpload(object):
             is_record (bool): Whether to save upload records. default False.
             redis_flag (str): Save uploaded Redis database tag name.
             redis_obj (object): redis database object.
+            proxy_ip(str): proxy ip, only supports raysyncproxy engine eg:10.14.88.66.
+            proxy_port(str): proxy port, only supports raysyncproxy engine eg:5555.
 
         Returns:
             bool: True is success, False is failure.
@@ -305,11 +336,30 @@ class RayvisionUpload(object):
         else:
             db_ini_path = None
         main_input_bid, main_user_id = get_share_info(self.api)
-        cmd = self.trans.create_cmd(cmd_params, db_ini_path, engine_type, server_ip, server_port,
-                                    main_user_id=main_user_id, main_input_bid=main_input_bid,
-                                    network_mode=network_mode)
-
-        return run_cmd(cmd, flag=True, logger=self.logger, is_record=is_record, redis_flag=redis_flag, redis_obj=redis_obj)
+        if engine_type == "aspera":
+            cmd = self.trans.create_cmd(cmd_params, db_ini_path, engine_type, server_ip, server_port,
+                                        main_user_id=main_user_id, main_input_bid=main_input_bid,
+                                        network_mode=network_mode)
+            result = run_cmd(cmd, flag=True, logger=self.logger, is_record=is_record, redis_flag=redis_flag, redis_obj=redis_obj)
+        elif engine_type == "raysyncproxy":
+            param_dict = {
+                "server_ip": server_ip if server_ip else self.trans.transport_info[engine_type]['server_ip'],
+                "server_port": server_port if server_port else self.trans.transport_info[engine_type]['server_port'],
+                "local_path": upload_json_path,
+                "server_path": "",
+                "storage_id": self.trans.input_bid,
+                "task_type": "upload-list",
+                "max_speed": max_speed,
+                "network_mode": network_mode,
+                "proxy_ip": proxy_ip,
+                "proxy_port": proxy_port
+            }
+            result = self.raysync_engine.start_transfer(**param_dict)
+        else:
+            msg = "{} is not a supported transport engine, " \
+                  "currently only support 'aspera' and 'raysyncproxy'".format(engine_type)
+            raise UnsupportedEngineType(msg)
+        return result
 
     def load_db_config(self, db_config_path=None):
         if not bool(db_config_path) or not os.path.exists(db_config_path):

@@ -1,4 +1,5 @@
 """Manage operations after generating tasks."""
+from copy import deepcopy
 
 from builtins import str
 
@@ -15,7 +16,7 @@ class RayvisionManageTask(object):
         """Instantiate API interface."""
         self._query = query
 
-    def is_task_end(self, task_id):
+    def is_task_end(self, task_id, is_test_stop):
         """Check if the task rendering ends.
 
         Args:
@@ -26,12 +27,15 @@ class RayvisionManageTask(object):
                 not over.
 
         """
+        TASK_END_STATUS_CODE_LIST_CP = deepcopy(TASK_END_STATUS_CODE_LIST)
+        if is_test_stop:
+            TASK_END_STATUS_CODE_LIST_CP.append("40")
         result = None
         task_status_list = self.get_task_status([task_id])
         task_status_codes = self.find_task_status_codes(task_status_list)
         if task_status_codes:
             for task_status_code in task_status_codes:
-                if task_status_code not in TASK_END_STATUS_CODE_LIST:
+                if task_status_code not in TASK_END_STATUS_CODE_LIST_CP:
                     result = False
                     break
             if result is not False:
@@ -152,6 +156,8 @@ class RayvisionManageTask(object):
                 e.g.:
                     [
                         {
+                            "userId": "1566",
+                            "bid": "15555",
                             "task_id":"111",
                             "task_status_code":"25",
                             "task_status_text":"render_task_status_25",
@@ -161,6 +167,8 @@ class RayvisionManageTask(object):
                             "sub_task_status":[]
                         },
                         {
+                            "userId": "1566",
+                            "bid": "15555",
                             "task_id":"222",
                             "task_status_code":"0",
                             "task_status_text":"render_task_status_0",
@@ -201,6 +209,8 @@ class RayvisionManageTask(object):
             task_status_dict['is_opener'] = str(is_opener)
             task_status_dict['output_file_name'] = output_file_name
             task_status_dict['sub_task_status'] = sub_task_status
+            task_status_dict['userId'] = task_info.get('userId')
+            task_status_dict['bid'] = task_info.get('bid')
 
             task_status_list.append(task_status_dict)
 
@@ -216,8 +226,9 @@ class RayvisionManageTask(object):
             list: Output scene name.
                 e.g.:
                     [
-                        "block_scene",
-                        "name_scene",
+                        "output_name": "output_name",
+                        "user_id": "454415646",
+                        "bid": "1515",
                     ]
 
         """
@@ -227,6 +238,8 @@ class RayvisionManageTask(object):
                                                     None)
             is_opener = task_status_dict.get('is_opener')
             sub_task_status = task_status_dict.get('sub_task_status', [])
+            user_id = task_status_dict.get('userId')
+            b_id = task_status_dict.get('bid')
 
             if int(is_opener) == 1:  # Have sub tasks.
                 if sub_task_status:
@@ -235,7 +248,7 @@ class RayvisionManageTask(object):
                     output_file_names.extend(output_file_list_sub)
             else:
                 if output_file_name is not None:
-                    output_file_names.append(output_file_name)
+                    output_file_names.append({"output_name": output_file_name, "user_id": user_id, "bid": b_id})
 
         return output_file_names
 

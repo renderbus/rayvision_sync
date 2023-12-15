@@ -2,4 +2,5 @@ rayvision_log>=0.3.3
 rayvision_api>=1.1.0
 requests==2.23.0
 configparser==4.0.2
-tenacity==6.0.0
+tenacity==7.0.0
+tqdm==4.64.1
