@@ -11,6 +11,8 @@ class ApiUrl(str, Enum):
     check_raysync_http = '/check-raysync-http'
     set_transfer_speed = '/set-transmission-parameters'
     set_proxy_manager = '/set-proxy-manager'
+    get_file_list = '/get-file-list'
 
     def __format__(self, format_spec):
         return str.__format__(str(self._value_), format_spec)
+ 

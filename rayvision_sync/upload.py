@@ -347,12 +347,13 @@ class RayvisionUpload(object):
                 "server_port": server_port if server_port else self.trans.transport_info[engine_type]['server_port'],
                 "local_path": upload_json_path,
                 "server_path": "",
-                "storage_id": self.trans.input_bid,
+                "storage_id": main_input_bid,
                 "task_type": "upload-list",
                 "max_speed": max_speed,
                 "network_mode": network_mode,
                 "proxy_ip": proxy_ip,
-                "proxy_port": proxy_port
+                "proxy_port": proxy_port,
+                "user_id": main_user_id
             }
             result = self.raysync_engine.start_transfer(**param_dict)
         else:

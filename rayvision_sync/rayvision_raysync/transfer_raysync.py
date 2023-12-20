@@ -213,7 +213,7 @@ class RayvisionTransferRaysync():
         else:
             os.system("pkill %s" % (RAYSYNCEXE[self._system]))
 
-    def convert_upload(self, upload_path, input_id):
+    def convert_upload(self, upload_path, input_id, user_id):
         """ create upload_list.json """
         upload_json_data = json.load(codecs.open(
             upload_path, "r", encoding="utf-8"))
@@ -222,7 +222,7 @@ class RayvisionTransferRaysync():
         upload_list_file = os.path.join(os.path.dirname(upload_path), "%s_list.json" % upload_list_name)
         with codecs.open(upload_list_file, "w", encoding="utf-8") as f_upload_list_file:
             for item in asset_list:
-                server = "/input/%s-%s" % (input_id, self.user_id) + item["server"]
+                server = "/input/%s-%s" % (input_id, user_id) + item["server"]
                 f_upload_list_file.write('local:"%s" server:"%s"\n' % (item["local"], server))
         return upload_list_file
 
@@ -271,7 +271,7 @@ class RayvisionTransferRaysync():
                                          "currently only support normal and json!" % (file_type))
         elif task_type == "upload-list":
             path_dict["file-list"] = self.convert_upload(
-                local_path, storage_id)
+                local_path, storage_id, user_id or self.user_id)
         elif task_type == "download":
             path_dict["source-path"] = "/%s/%s-%s/%s" % (
                 downstorage, storage_id, user_id or self.user_id, server_path)
@@ -361,6 +361,11 @@ class RayvisionTransferRaysync():
             else:
                 if status == "failed":
                     self._task_failed_dict[task_id] = tranfer_task_id
+                    file_params = {"task-id": tranfer_task_id, "list-type": "error", "page-size": 10, "page-number": 1}
+                    file_response = self.post(self._url.get_file_list, file_params)
+                    file_list = file_response["file-list"]
+                    for error_dict in file_list:
+                        self.logger.error('file Transfer failed: %s code: %s' % (error_dict["local-path"], error_dict["error-code"]))
                 elif status == "successful":
                     self._task_failed_dict.pop(task_id, None)
                 else:

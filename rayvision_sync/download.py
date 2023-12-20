@@ -418,7 +418,7 @@ class RayvisionDownload(object):
                     "server_ip": server_ip if server_ip else self.trans.transport_info['raysyncproxy']['server_ip'],
                     "server_port": server_port if server_port else self.trans.transport_info['raysyncproxy']['server_port'],
                     "local_path": local_path,
-                    "server_path": output_file_name["output_name"],
+                    "server_path": output_file_name["output_name"] if download_filename_format == "true" else output_file_name["output_name"].rstrip('\\/')+'/',
                     "storage_id": bid or self.trans.output_bid,
                     "task_type": "download",
                     "task_id": task_id_list[0],
