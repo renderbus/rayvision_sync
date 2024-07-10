@@ -71,7 +71,7 @@ class RayvisionUpload(object):
         self.trans = RayvisionTransfer(api, **params)
         self.raysync_engine = RayvisionTransferRaysync(self.api.user_info.get("domain"), self.trans.user_id, self.api.user_info.get("user_name"),
                                                        self.api.query.get_raysync_user_key().get('raySyncUserKey'),
-                                                       self.trans.platform, self.logger)
+                                                       self.trans.platform, self.logger, timeout=self.api.connect.timeout)
 
         # load db config ini
         self.transfer_log_path, self.redis_config, self.sqlite_config, self.database_config = \
@@ -167,10 +167,9 @@ class RayvisionUpload(object):
             config_ini.write(configfile)
         return db_ini_path
 
-    def upload(self, task_id, task_json_path, tips_json_path, asset_json_path,
-               upload_json_path, max_speed=None, transmit_type="upload_json",
-               engine_type="aspera", server_ip=None, server_port=None,
-               network_mode=0, is_record=False, redis_flag=None, redis_obj=None, proxy_ip=None, proxy_port=None):
+    def upload(self, task_id, task_json_path, tips_json_path, asset_json_path, upload_json_path, max_speed=None,
+               transmit_type="upload_json", engine_type="aspera", server_ip=None, server_port=None, network_mode=0,
+               is_record=False, redis_flag=None, redis_obj=None, proxy_ip=None, proxy_port=None, upload_num=2):
         """Run the cmd command to upload the configuration file.
 
         Args:
@@ -197,6 +196,7 @@ class RayvisionUpload(object):
             redis_obj (object): redis database object.
             proxy_ip(str): proxy ip, only supports raysyncproxy engine eg:10.14.88.66.
             proxy_port(str): proxy port, only supports raysyncproxy engine eg:5555.
+            upload_num(int): Maximum number of uploads, default is 2.
 
         Returns:
             bool: True is success, False is failure.
@@ -208,22 +208,23 @@ class RayvisionUpload(object):
             asset_json_path,
             upload_json_path
         ]
-        result_config = self.upload_config(task_id, config_file_list, max_speed,
+        result_config = self.upload_config(task_id, config_file_list, max_speed=max_speed,
                                            engine_type=engine_type, server_ip=server_ip, server_port=server_port,
-                                           network_mode=network_mode, proxy_ip=proxy_ip, proxy_port=proxy_port)
+                                           network_mode=network_mode, proxy_ip=proxy_ip, proxy_port=proxy_port,
+                                           upload_num=upload_num)
         if not result_config:
             return False
-        result_asset = self.upload_asset(upload_json_path, max_speed, transmit_type=transmit_type,
+        result_asset = self.upload_asset(upload_json_path, max_speed=max_speed, transmit_type=transmit_type,
                                          engine_type=engine_type, server_ip=server_ip, server_port=server_port,
                                          network_mode=network_mode, is_record=is_record, redis_flag=redis_flag,
-                                         redis_obj=redis_obj, proxy_ip=proxy_ip, proxy_port=proxy_port)
+                                         redis_obj=redis_obj, proxy_ip=proxy_ip, proxy_port=proxy_port,
+                                         upload_num=upload_num)
         if not result_asset:
             return False
         return True
 
-    def upload_config(self, task_id, config_file_list, max_speed=None,
-                      engine_type="aspera", server_ip=None, server_port=None,
-                      network_mode=0, proxy_ip=None, proxy_port=None):
+    def upload_config(self, task_id, config_file_list, max_speed=None, engine_type="aspera", server_ip=None,
+                      server_port=None, network_mode=0, proxy_ip=None, proxy_port=None, upload_num=2):
         """Run the cmd command to upload configuration profiles.
 
         Args:
@@ -241,6 +242,7 @@ class RayvisionUpload(object):
                                                2: udp;
             proxy_ip(str): proxy ip, only supports raysyncproxy engine eg:10.14.88.66.
             proxy_port(str): proxy port, only supports raysyncproxy engine eg:5555.
+            upload_num(int): Maximum number of uploads, default is 2.
 
         Returns:
             bool: True is success, False is failure.
@@ -268,7 +270,7 @@ class RayvisionUpload(object):
                                                 server_port=server_port, network_mode=network_mode)
                     result = run_cmd(cmd, flag=True, logger=self.logger)
                 elif engine_type == "raysyncproxy":
-                    paramDict = {
+                    param_dict = {
                         "server_ip": server_ip if server_ip else self.trans.transport_info[engine_type]['server_ip'],
                         "server_port": server_port if server_port else self.trans.transport_info[engine_type]['server_port'],
                         "local_path": local_path,
@@ -281,9 +283,10 @@ class RayvisionUpload(object):
                         "max_speed": max_speed,
                         "network_mode": network_mode,
                         "proxy_ip": proxy_ip,
-                        "proxy_port": proxy_port
+                        "proxy_port": proxy_port,
+                        "upload_num": upload_num
                     }
-                    result = self.raysync_engine.start_transfer(**paramDict)
+                    result = self.raysync_engine.start_transfer(**param_dict)
                 else:
                     msg = "{} is not a supported transport engine, " \
                       "currently only support 'aspera' and 'raysyncproxy'".format(engine_type)
@@ -298,10 +301,9 @@ class RayvisionUpload(object):
         return True
 
     @upload_retry
-    def upload_asset(self, upload_json_path, max_speed=None, is_db=True,
-                     engine_type="aspera", server_ip=None, server_port=None,
-                     transmit_type="upload_json", network_mode=0, redis_flag=None,
-                     is_record=False, redis_obj=None, proxy_ip=None, proxy_port=None):
+    def upload_asset(self, upload_json_path, max_speed=None, is_db=True, engine_type="aspera", server_ip=None,
+                     server_port=None, transmit_type="upload_json", network_mode=0, redis_flag=None, is_record=False,
+                     redis_obj=None, proxy_ip=None, proxy_port=None, upload_num=2):
         """Run the cmd command to upload asset files.
 
         Args:
@@ -323,6 +325,7 @@ class RayvisionUpload(object):
             redis_obj (object): redis database object.
             proxy_ip(str): proxy ip, only supports raysyncproxy engine eg:10.14.88.66.
             proxy_port(str): proxy port, only supports raysyncproxy engine eg:5555.
+            upload_num(int): Maximum number of uploads, default is 2.
 
         Returns:
             bool: True is success, False is failure.
@@ -353,7 +356,8 @@ class RayvisionUpload(object):
                 "network_mode": network_mode,
                 "proxy_ip": proxy_ip,
                 "proxy_port": proxy_port,
-                "user_id": main_user_id
+                "user_id": main_user_id,
+                "upload_num": upload_num
             }
             result = self.raysync_engine.start_transfer(**param_dict)
         else:

@@ -12,7 +12,8 @@ class ApiUrl(str, Enum):
     set_transfer_speed = '/set-transmission-parameters'
     set_proxy_manager = '/set-proxy-manager'
     get_file_list = '/get-file-list'
+    set_task_limit = '/set-task-limit'
+    get_task_limit = '/get-task-limit'
 
     def __format__(self, format_spec):
         return str.__format__(str(self._value_), format_spec)
- 

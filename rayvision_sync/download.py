@@ -20,7 +20,7 @@ from rayvision_sync.transfer import RayvisionTransfer
 from rayvision_sync.exception import DownloadFailed, UnsupportedEngineType
 from rayvision_sync.utils import create_transfer_params
 from rayvision_sync.utils import run_cmd
-from rayvision_sync.utils import str2unicode
+from rayvision_sync.utils import str2unicode, get_share_info
 from rayvision_log import init_logger
 from rayvision_sync.constants import PACKAGE_NAME
 from rayvision_sync.rayvision_raysync.transfer_raysync import RayvisionTransferRaysync
@@ -70,7 +70,7 @@ class RayvisionDownload(object):
             self.logger.setLevel(level=log_level.upper())
         self.raysync_engine = RayvisionTransferRaysync(self.api.user_info.get("domain"), self.trans.user_id, self.api.user_info.get("user_name"),
                                                        self.api.query.get_raysync_user_key().get('raySyncUserKey'),
-                                                       self.trans.platform, self.logger)
+                                                       self.trans.platform, self.logger, timeout=self.api.connect.timeout)
 
     def _download_log(self, task_id_list, local_path):
         """Download log Settings.
@@ -113,12 +113,9 @@ class RayvisionDownload(object):
             raise Exception("One of the task_id_list and custom_server_output_path"
                             " must exist")
 
-    def download(self, task_id_list=None,
-                 max_speed=None, print_log=True,
-                 download_filename_format="true",
-                 local_path=None, server_path=None,
-                 engine_type="aspera", server_ip=None, server_port=None,
-                 network_mode=0, proxy_ip=None, proxy_port=None, asset=False):
+    def download(self, task_id_list=None, max_speed=None, print_log=True, download_filename_format="true",
+                 local_path=None, server_path=None, engine_type="aspera", server_ip=None, server_port=None,
+                 network_mode=0, proxy_ip=None, proxy_port=None, enable_hash=False, asset=False, download_num=2):
         """Download and update the undownloaded record.
 
         Args:
@@ -148,12 +145,16 @@ class RayvisionDownload(object):
                                                2: udp;
             proxy_ip(str): proxy ip, only supports raysyncproxy engine eg:10.14.88.66.
             proxy_port(str): proxy port, only supports raysyncproxy engine eg:5555.
-            asset(bool): Download assets or render images True: render images False: assets default False
+            enable_hash(bool): Enable hash verification.
+            asset(bool): Download assets or render images True: render images False: assets default False.
+            download_num(int): Maximum number of downloads, default is 2.
 
         Returns:
             bool: True is success.
 
         """
+        if asset and not local_path:
+            local_path = os.path.dirname(server_path)
         self.check_params(task_id_list, server_path)
         local_path = self._check_local_path(local_path)
         self.logger.info("[Rayvision_sync start download .....]")
@@ -162,16 +163,15 @@ class RayvisionDownload(object):
         self._run_download(task_id_list, local_path, max_speed, print_log,
                            download_filename_format, server_path,
                            engine_type=engine_type, server_ip=server_ip, server_port=server_port,
-                           network_mode=network_mode, proxy_ip=proxy_ip, proxy_port=proxy_port, asset=asset)
+                           network_mode=network_mode, proxy_ip=proxy_ip, proxy_port=proxy_port,
+                           enable_hash=enable_hash, asset=asset, download_num=download_num)
         self.logger.info("[Rayvision_sync end download.....]")
         return True
 
-    def auto_download(self, task_id_list=None, max_speed=None,
-                      print_log=False, sleep_time=10,
-                      download_filename_format="true",
-                      local_path=None,
-                      engine_type="aspera", server_ip=None, server_port=None,
-                      network_mode=0, is_test_stop=False, proxy_ip=None, proxy_port=None,enable_hash=False):
+    def auto_download(self, task_id_list=None, max_speed=None, print_log=False, sleep_time=10,
+                      download_filename_format="true", local_path=None, engine_type="aspera", server_ip=None,
+                      server_port=None, network_mode=0, is_test_stop=False, proxy_ip=None, proxy_port=None,
+                      enable_hash=False, download_num=2):
         """Automatic download (complete one frame download).
 
         Wait for all downloads to update undownloaded records.
@@ -204,6 +204,7 @@ class RayvisionDownload(object):
             proxy_ip(str): proxy ip, only supports raysyncproxy engine eg:10.14.88.66.
             proxy_port(str): proxy port, only supports raysyncproxy engine eg:5555.
             enable_hash(bool): Enable hash verification.
+            download_num(int): Maximum number of downloads, default is 2.
 
         Returns:
             bool: True is success.
@@ -217,7 +218,8 @@ class RayvisionDownload(object):
                                  max_speed, print_log, local_path,
                                  is_test_stop, download_filename_format,
                                  engine_type=engine_type, server_ip=server_ip, server_port=server_port,
-                                 network_mode=network_mode,  proxy_ip=proxy_ip, proxy_port=proxy_port,enable_hash=enable_hash)
+                                 network_mode=network_mode,  proxy_ip=proxy_ip, proxy_port=proxy_port,
+                                 enable_hash=enable_hash, download_num=download_num)
         self.logger.info("[Rayvision_sync end auto_download.....]")
         return True
 
@@ -225,7 +227,8 @@ class RayvisionDownload(object):
                             max_speed, print_log, local_path, is_test_stop,
                             download_filename_format="true",
                             engine_type=None, server_ip=None, server_port=None,
-                            network_mode=0, proxy_ip=None, proxy_port=None,enable_hash=False):
+                            network_mode=0, proxy_ip=None, proxy_port=None,enable_hash=False,
+                            download_num=2):
         """Automatic download (complete one frame download).
 
         Args:
@@ -252,6 +255,7 @@ class RayvisionDownload(object):
             proxy_ip(str): proxy ip, only supports raysyncproxy engine eg:10.14.88.66
             proxy_port(str): proxy port, only supports raysyncproxy engine eg:5555
             enable_hash(bool): Enable hash verification.
+            download_num(int): Maximum number of downloads, default is 2.
 
         """
         download_failed_list = list()
@@ -266,7 +270,8 @@ class RayvisionDownload(object):
                         self._run_download([task_id], local_path, max_speed,
                                            print_log, download_filename_format,
                                            engine_type=engine_type, server_ip=server_ip, server_port=server_port,
-                                           network_mode=network_mode, proxy_ip=proxy_ip, proxy_port=proxy_port,enable_hash=enable_hash)
+                                           network_mode=network_mode, proxy_ip=proxy_ip, proxy_port=proxy_port,
+                                           enable_hash=enable_hash, download_num=download_num)
                     except DownloadFailed:
                         download_flag = False
 
@@ -288,7 +293,8 @@ class RayvisionDownload(object):
                                            download_filename_format="true",
                                            local_path=None,
                                            engine_type="aspera", server_ip=None, server_port=None,
-                                           network_mode=0,  is_test_stop=False, proxy_ip=None, proxy_port=None,enable_hash=False):
+                                           network_mode=0,  is_test_stop=False, proxy_ip=None, proxy_port=None,
+                                           enable_hash=False, download_num=2):
         """Auto download after the tasks render completed.
 
         Args:
@@ -319,7 +325,8 @@ class RayvisionDownload(object):
             proxy_ip(str): proxy ip, only supports raysyncproxy engine eg:10.14.88.66
             proxy_port(str): proxy port, only supports raysyncproxy engine eg:5555
             enable_hash(bool): Enable hash verification.
-
+            download_num(int): Maximum number of downloads, default is 2.  
+            
         Returns:
             bool: True is success.
 
@@ -342,7 +349,8 @@ class RayvisionDownload(object):
                                            max_speed, print_log,
                                            download_filename_format,
                                            engine_type=engine_type, server_ip=server_ip, server_port=server_port,
-                                           network_mode=network_mode, proxy_ip=proxy_ip, proxy_port=proxy_port,enable_hash=enable_hash)
+                                           network_mode=network_mode, proxy_ip=proxy_ip, proxy_port=proxy_port,
+                                           enable_hash=enable_hash, download_num=download_num)
                         task_id_list.remove(task_id)
             else:
                 break
@@ -354,7 +362,7 @@ class RayvisionDownload(object):
     def _run_download(self, task_id_list, local_path, max_speed=None,
                       print_log=True, download_filename_format="true",
                       server_path=None, engine_type="aspera", server_ip=None, server_port=None,
-                      network_mode=0, proxy_ip=None, proxy_port=None, enable_hash=False, asset=False):
+                      network_mode=0, proxy_ip=None, proxy_port=None, enable_hash=False, asset=False, download_num=2):
         """Execute the cmd command for multitasking download.
 
         Args:
@@ -380,11 +388,14 @@ class RayvisionDownload(object):
             proxy_ip(str): proxy ip, only supports raysyncproxy engine eg:10.14.88.66
             proxy_port(str): proxy port, only supports raysyncproxy engine eg:5555
             enable_hash(bool): Enable hash verification.
-            asset(bool): Download assets or render images True: render images False: assets default False
+            asset(bool): Download assets or render images True: render images False: assets default False.
+            download_num(int): Maximum number of downloads, default is 2.
 
         """
         transmit_type = 'download_path'
         local_path = str2unicode(local_path)
+        if not os.path.exists(local_path):
+            os.makedirs(local_path)
         # The unit of 'max_speed' is KB/S, default value is 1048576 KB/S,
         #  means 1 GB/S.
         max_speed = max_speed if max_speed is not None else "1048576"
@@ -407,14 +418,18 @@ class RayvisionDownload(object):
         for output_file_name in output_file_names:
             cmd_params = [transmit_type, local_path, output_file_name["output_name"],
                           max_speed, download_filename_format, 'output_bid']
-            bid = self.trans.input_bid if asset else output_file_name["bid"]
+            main_input_bid, main_user_id = get_share_info(self.api)
+            bid = main_input_bid if asset else output_file_name["bid"]
+            user_id = main_user_id if asset else output_file_name["user_id"]
+
             if engine_type == "aspera":
                 cmd = self.trans.create_cmd(cmd_params, engine_type=engine_type,
                                             server_ip=server_ip, server_port=server_port, bid=bid,
-                                            network_mode=network_mode, main_user_id=output_file_name["user_id"])
-                tranfer_code = run_cmd(cmd, print_log=print_log, logger=self.logger)
+                                            network_mode=network_mode, main_user_id=user_id)
+                transfer_code = run_cmd(cmd, print_log=print_log, logger=self.logger)
+                
             elif engine_type == "raysyncproxy":
-                tranfer_code = self.raysync_engine.start_transfer(**{
+                transfer_code = self.raysync_engine.start_transfer(**{
                     "server_ip": server_ip if server_ip else self.trans.transport_info['raysyncproxy']['server_ip'],
                     "server_port": server_port if server_port else self.trans.transport_info['raysyncproxy']['server_port'],
                     "local_path": local_path,
@@ -422,18 +437,19 @@ class RayvisionDownload(object):
                     "storage_id": bid or self.trans.output_bid,
                     "task_type": "download",
                     "task_id": task_id_list[0],
-                    "user_id": output_file_name["user_id"],
+                    "user_id":  user_id,
                     "max_speed": max_speed,
                     "network_mode": network_mode,
                     "proxy_ip": proxy_ip,
                     "proxy_port": proxy_port,
                     "enable_hash": enable_hash,
-                    "downstorage": "input" if asset else "output"
+                    "trans_storage": "input" if asset else "output",
+                    "download_num": download_num
                 })
             else:
                 msg = "{} is not a supported transport engine, " \
                       "currently only support 'aspera' and 'raysyncproxy'".format(engine_type)
                 raise UnsupportedEngineType(msg)
 
-            if tranfer_code != 0:
+            if transfer_code != 0:
                 raise DownloadFailed('%s Download failed' % output_file_name)

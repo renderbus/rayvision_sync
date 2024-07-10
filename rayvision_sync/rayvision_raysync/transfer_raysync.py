@@ -1,3 +1,4 @@
+# -*- coding:utf-8 -*-
 import time
 import requests
 import os
@@ -18,7 +19,7 @@ from rayvision_sync.rayvision_raysync.exception import TaskidNotexsit, DownloadR
 class RayvisionTransferRaysync():
     ''' Interactive Raysync interface '''
 
-    def __init__(self, task_domain, user_id, user_name, user_key, platform, logger=None, raysyncdirpath=None):
+    def __init__(self, task_domain, user_id, user_name, user_key, platform, logger=None, raysyncdirpath=None, timeout=None):
         """
         _headers: The generic interface request header for Raysync;
         _domain: The generic interface request IP for Raysync;
@@ -33,6 +34,7 @@ class RayvisionTransferRaysync():
         :param platform: Platform number
         :param logger: The log object
         :param raysyncdirpath: Path where the Raysync resides
+        :param timeout: How long to wait for the server to send data before giving up
         """
         self.logger = logger
         self._headers = HEADERS
@@ -51,6 +53,7 @@ class RayvisionTransferRaysync():
         self.user_id = user_id
         self.user_name = user_name
         self.service_statu = False
+        self.timeout = timeout
 
     def auto_download(self):
         """The static raysync package is automatically downloaded"""
@@ -65,7 +68,7 @@ class RayvisionTransferRaysync():
                 self.task_domain, raysync_name)
             zip_path = os.path.join(
                 os.path.dirname(__file__), raysync_name)
-            response = requests.get(raysync_link, stream=True)
+            response = requests.get(raysync_link, stream=True, timeout=self.timeout)
             total = int(response.headers.get('content-length', 0))
             self.logger.debug(zip_path)
             with open(zip_path, 'wb') as file, tqdm(
@@ -117,7 +120,7 @@ class RayvisionTransferRaysync():
                               pformat(self._headers, width=500))
             self.logger.debug('HTTP Body: %s', pformat(data, width=500))
         response = requests.post(
-            request_address, json=data, headers=self._headers, proxies={"http": self._base_url})
+            request_address, json=data, headers=self._headers, proxies={"http": self._base_url}, timeout=self.timeout)
         json_response = response.json()
         self.logger.debug('HTTP Response: %s', json_response)
         code = json_response["code"]
@@ -167,6 +170,25 @@ class RayvisionTransferRaysync():
         self.post(self._url.set_proxy_manager, params)
         self.logger.info("set Proxy enable:%s %s:%s" % (enable_proxy, proxy_ip, proxy_port))
 
+    def set_task_limit(self, upload_num, download_num):
+        """Set the maximum number of upload and download tasks."""
+        if upload_num < 1 or upload_num > 10:
+            raise NotSupportTasktype("The number of upload tasks started at the same time is limited to 1-10")
+        if download_num < 1 or download_num > 10:
+            raise NotSupportTasktype("The number of download tasks started at the same time is limited to 1-10")
+        params = {
+            "upload": upload_num,
+            "download": download_num
+        }
+        self.post(self._url.set_task_limit, params)
+        self.logger.info("Set the max upload tasks: %s, download tasks: %s" % (upload_num, download_num))
+
+    def get_task_limit(self):
+        """Get the currently set maximum number of upload and download tasks."""
+        response = self.post(self._url.get_task_limit, {})
+        self.logger.info("Get the max upload tasks: %s, download tasks: %s" % (response["upload"], response["download"]))
+        return response["upload"], response["download"]
+
     def get_run_raysync(self):
         """Get the command to start the program of Raysync."""
         if self._system == "Windows":
@@ -192,7 +214,7 @@ class RayvisionTransferRaysync():
                     try:
                         url = self._base_url + self._url.check_raysync_http
                         response = requests.post(url, headers=self._headers, json={"sign": "render-bus"},
-                                                 proxies={"http": self._base_url}).json()
+                                                 proxies={"http": self._base_url}, timeout=self.timeout).json()
                         result_code = response.get('code')
                     except:
                         time.sleep(0.2)
@@ -222,11 +244,11 @@ class RayvisionTransferRaysync():
         upload_list_file = os.path.join(os.path.dirname(upload_path), "%s_list.json" % upload_list_name)
         with codecs.open(upload_list_file, "w", encoding="utf-8") as f_upload_list_file:
             for item in asset_list:
-                server = "/input/%s-%s" % (input_id, user_id) + item["server"]
+                server = "/input/%s-%s" % (input_id, user_id)  + '/' + item["server"].lstrip('/')
                 f_upload_list_file.write('local:"%s" server:"%s"\n' % (item["local"], server))
         return upload_list_file
 
-    def get_transfer_path(self, task_type, local_path, server_path, storage_id, task_id, file_type, downstorage,
+    def get_transfer_path(self, task_type, local_path, server_path, storage_id, task_id, file_type, trans_storage,
                           user_id=None):
         """ Concatenate server paths based on transmission paths
         @:param: task_type
@@ -268,22 +290,23 @@ class RayvisionTransferRaysync():
                     storage_id, user_id or self.user_id, task_id)
             else:
                 raise NotSupportfiletype(" %s is not supported file-type, "
-                                         "currently only support normal and json!" % (file_type))
+                                         "currently only support normal and json!" % file_type)
         elif task_type == "upload-list":
             path_dict["file-list"] = self.convert_upload(
                 local_path, storage_id, user_id or self.user_id)
         elif task_type == "download":
             path_dict["source-path"] = "/%s/%s-%s/%s" % (
-                downstorage, storage_id, user_id or self.user_id, server_path)
+                trans_storage, storage_id, user_id or self.user_id, server_path)
             path_dict["target-path"] = local_path
         else:
             raise NotSupportTasktype(" %s is not supported task-type, "
-                                     "currently only support upload and download and upload-list!" % (task_type))
+                                     "currently only support upload and download and upload-list!" % task_type)
         return path_dict
 
     def start_transfer(self, server_ip, server_port, local_path, server_path, storage_id, input_id=None, task_type=None,
-                       task_id=None, user_id=None, file_type="normal", downstorage="output", max_speed=None,
-                       max_timeout=18000, network_mode=0, proxy_ip=None, proxy_port=None, enable_hash=False):
+                       task_id=None, user_id=None, file_type="normal", trans_storage="output", max_speed=None,
+                       max_timeout=18000, network_mode=0, proxy_ip=None, proxy_port=None, enable_hash=False,
+                       upload_num=2, download_num=2):
         """
         @:param server_ip: The IP address of the transport server
         @:param server_port: The IP address of the transport port
@@ -293,12 +316,15 @@ class RayvisionTransferRaysync():
         @:param input_id: Various input storage type id
         @:param task_type: Transfer task Type eg:[download, upload, upload-list]
         @:param file_type: only to upload, eg:[normal, json]
+        @:param trans_storage: The storage types transferred are only output and input.
         @:param max_speed: default is 1GB/S
         @:param max_timeout: Maximum time for querying task status
         @:param network_mode: Transport Protocol Type eg:[0, 1, 2]
         @:param proxy_ip: Proxy ip eg:10.14.88.66
         @:param proxy_port: Proxy port eg:5555
         @:param enable_hash: Enable hash verification.
+        @:param upload_num: Maximum number of uploads, default is 2.
+        @:param download_num: Maximum number of downloads, default is 2.
         :return: statu code
         """
         # start service
@@ -306,9 +332,10 @@ class RayvisionTransferRaysync():
         self.listening_raysync_server()
         self.set_transfer_speed(max_speed, network_mode)
         self.set_proxy_manager(proxy_ip, proxy_port)
+        self.set_task_limit(upload_num, download_num)
         if task_id not in self._task_failed_dict:  # first create task
             path_dict = self.get_transfer_path(
-                task_type, local_path, server_path, storage_id, task_id, file_type, downstorage, user_id)
+                task_type, local_path, server_path, storage_id, task_id, file_type, trans_storage, user_id)
             mode_dict = {0: "default", 1: "tcp-only", 2: "udp-only"}
             storage_id = input_id if file_type == "json" else storage_id
             params = {
@@ -317,7 +344,7 @@ class RayvisionTransferRaysync():
                 "server-port": int(storage_id),
                 "server-ssl-port": int(storage_id)-100,
                 "renderbus-proxy-port": 32002,
-                "proxy-port": 32002,
+                "proxy-port": int(server_port) or 32002,
                 "protocol-type": mode_dict[network_mode],
                 "delay-threshold": 0,
                 "account": self.user_name,
@@ -328,21 +355,21 @@ class RayvisionTransferRaysync():
             }
             params.update(path_dict)
             response = self.post(self._url.create_task, params)
-            tranfer_task_id = response.get('task-id')
+            transfer_task_id = response.get('task-id')
             self.logger.info(
-                'Transfer task has been created. The Transfer task ID is %s' % (tranfer_task_id))
+                'Transfer task has been created. The Transfer task ID is %s' % transfer_task_id)
         else:  # 重新启动任务
             params = {
                 "task-id": self._task_failed_dict[task_id],
             }
             response = self.post(self._url.start_task, params)
-            tranfer_task_id = self._task_failed_dict[task_id]
+            transfer_task_id = self._task_failed_dict[task_id]
             self.logger.info('Render task_id is %s,Transfer task id %s already try again......' % (
-                task_id, tranfer_task_id))
-        res_code = self.look_task_stauts(tranfer_task_id, task_id, max_timeout)
+                task_id, transfer_task_id))
+        res_code = self.look_task_status(transfer_task_id, task_id, max_timeout, task_type)
         return res_code
 
-    def look_task_stauts(self, tranfer_task_id, task_id, max_timeout):
+    def look_task_status(self, transfer_task_id, task_id, max_timeout, task_type):
         """ look listening task status
             STATU_SLEEP: request task_status interface sleep(5s)
         """
@@ -353,17 +380,19 @@ class RayvisionTransferRaysync():
                     "Transmission timeout! The maximum transmission time is 5 hours by default!")
             now_seconds += 1
             time.sleep(STATU_SLEEP)
-            params = {"task-id": tranfer_task_id}
+            params = {"task-id": transfer_task_id}
             response = self.post(self._url.get_task_status, params)
             status = response["task-list"][0]["task-state"]
-            if status in ["ready", "start", "idle"]:
+            if status in ["start", "idle"]:
                 continue
+            elif status == "ready":
+                self.get_all_task_status(task_type)
             else:
                 if status == "failed":
-                    self._task_failed_dict[task_id] = tranfer_task_id
-                    file_params = {"task-id": tranfer_task_id, "list-type": "error", "page-size": 10, "page-number": 1}
+                    self._task_failed_dict[task_id] = transfer_task_id
+                    file_params = {"task-id": transfer_task_id, "list-type": "error", "page-size": 10, "page-number": 1}
                     file_response = self.post(self._url.get_file_list, file_params)
-                    file_list = file_response["file-list"]
+                    file_list = file_response["file-list"] if file_response["file-list"] else []
                     for error_dict in file_list:
                         self.logger.error('file Transfer failed: %s code: %s' % (error_dict["local-path"], error_dict["error-code"]))
                 elif status == "successful":
@@ -388,11 +417,29 @@ class RayvisionTransferRaysync():
         return response
 
     def get_task_list_status(self):
-        """
-            Querying Task List Status
+        """Querying Task List Status.
+
         :return:
         """
         self.listening_raysync_server()
         params = {"task-group": "all"}
         response = self.post(self._url.get_task_list_status, params)
         return response
+
+    def get_all_task_status(self, current_task_type):
+        """Get the number of running and waiting tasks.
+
+        :param current_task_type: The type of task currently being transferred.
+        """
+        response = self.get_task_list_status()
+        task_nums = {"upload": {"ready": 0, "start": 0}, "download": {"ready": 0, "start": 0}}
+        for task_data in response.get("task-list", []):
+            task_type = task_data.get("task-type")
+            task_state = task_data.get("task-state")
+            if task_state in ["start", "ready"]:
+                if task_type in ["upload", "download"]:
+                    task_nums[task_type][task_state] += 1
+        task = "download" if "download" in current_task_type else "upload"
+        self.logger.info('There are %s running items in the %s list and %s waiting items.' % (
+            task_nums[task]["start"], task, task_nums[task]["ready"]))
+

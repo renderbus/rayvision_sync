@@ -124,6 +124,7 @@ def api(user_info_dict, mocker, tmpdir):
         "local_os": local_os,
         "user_id": "1015646",
     }
+    rayvision_api.connect.timeout = 60
     return rayvision_api
 
 
